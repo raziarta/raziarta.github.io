@@ -279,3 +279,96 @@ body {
     .logo-section { margin-bottom: 4rem; }
     .games-section { grid-template-columns: 1fr; }
 }
+
+
+/* Member Section Custom Styles */
+.member-container {
+    padding: 2rem 0;
+    width: 100%;
+}
+
+.member-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 5rem;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.member-card {
+    background: rgba(255, 255, 255, 0.02);
+    border-left: 5px solid var(--accent-red);
+    padding: 3rem;
+    border-radius: 0 30px 30px 0;
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
+    border-left: 5px solid var(--accent-red);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.member-card:hover {
+    background: rgba(230, 57, 70, 0.05);
+    transform: translateX(15px);
+    border-color: rgba(230, 57, 70, 0.3);
+}
+
+.member-name {
+    font-family: var(--font-jp);
+    margin-bottom: 2rem;
+    letter-spacing: 0.2rem;
+}
+
+/* ラジアータ（一番大きい文字） */
+.member-name.primary {
+    font-size: 4.5rem;
+    background: linear-gradient(to right, #fff, var(--accent-red));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* トリコさん（大きな文字） */
+.member-name.secondary {
+    font-size: 3.5rem;
+    color: var(--text-primary);
+}
+
+.member-bio p {
+    font-size: 1.2rem;
+    line-height: 2;
+    color: var(--text-secondary);
+    margin-bottom: 1.2rem;
+}
+
+/* ハイパーリンクのスタイル */
+.member-bio a {
+    color: var(--accent-red);
+    text-decoration: none;
+    font-weight: 700;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.member-bio a::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background-color: var(--accent-red);
+    transition: width 0.3s ease;
+}
+
+.member-bio a:hover {
+    color: #fff;
+}
+
+.member-bio a:hover::after {
+    width: 100%;
+}
+
+.recommend {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px dashed var(--border-color);
+}

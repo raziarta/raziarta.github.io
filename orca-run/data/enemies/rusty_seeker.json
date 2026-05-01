@@ -1,0 +1,6 @@
+{
+  "type": "rustySeeker",
+  "hp": 12, "speed": 0, "damage": 15,
+  "hw": 18, "hh": 18,
+  "dropRate": 0.12
+}

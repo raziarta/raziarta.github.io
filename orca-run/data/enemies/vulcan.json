@@ -1,0 +1,6 @@
+{
+  "type": "vulcan",
+  "hp": 220, "damage": 15,
+  "hw": 80, "hh": 100,
+  "dropRate": 1.0
+}

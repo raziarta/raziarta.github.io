@@ -1,0 +1,6 @@
+{
+  "type": "magmaCrawler",
+  "hp": 18, "speed": 1.5, "damage": 12,
+  "hw": 22, "hh": 15,
+  "dropRate": 0.1
+}

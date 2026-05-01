@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>シャチラン - ORCA RUN</title>
+  <meta name="description" content="退廃した未来世界を駆け抜ける、2D強制横スクロール ラン＆シューティングゲーム">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="editor.css">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DotGothic16&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="overlay">
+      <div class="title-content">
+        <h1 class="title-logo-text">LOADING...</h1>
+        <div class="loading-bar-bg" style="width:300px;height:10px;background:#222;margin:20px auto;border:2px solid #555;">
+          <div id="loading-bar" style="width:0%;height:100%;background:#44cc66;transition:width 0.2s;"></div>
+        </div>
+        <p id="loading-text" class="start-prompt">0 / 0 Assets</p>
+      </div>
+    </div>
+
+    <!-- Title Screen -->
+    <div id="title-screen" class="overlay hidden">
+      <div class="title-content">
+        <h1 class="title-logo-text">シャチラン</h1>
+        <div class="title-divider"></div>
+        <p class="start-prompt blink">CLICK TO START</p>
+        <div>
+          <div id="btn-editor" style="display:inline-block;margin-top:16px;padding:10px 28px;border:2px solid #44ccff;color:#44ccff;border-radius:8px;cursor:pointer;font-size:14px;font-family:'Press Start 2P',monospace;background:rgba(0,0,0,0.5);letter-spacing:2px;transition:all 0.2s" onmouseenter="this.style.background='rgba(68,204,255,0.15)'" onmouseleave="this.style.background='rgba(0,0,0,0.5)'">STAGE EDITOR</div>
+          <div id="btn-fullscreen" onclick="window.toggleGameFullscreen(event); event.stopPropagation();" style="display:inline-block;margin-top:16px;margin-left:16px;padding:10px 28px;border:2px solid #ffcc44;color:#ffcc44;border-radius:8px;cursor:pointer;font-size:14px;font-family:'Press Start 2P',monospace;background:rgba(0,0,0,0.5);letter-spacing:2px;transition:all 0.2s" onmouseenter="this.style.background='rgba(255,204,68,0.15)'" onmouseleave="this.style.background='rgba(0,0,0,0.5)'">⛶ FULLSCREEN</div>
+        </div>
+        <div class="controls-hint">
+          <p>← → : MOVE &nbsp;|&nbsp; W / Shift : JUMP (HOLD FOR HIGH) &nbsp;|&nbsp; ↓ : CROUCH</p>
+          <p>W / Shift (IN AIR) : DOUBLE JUMP &nbsp;|&nbsp; 1, 2, 3 : USE ITEMS</p>
+          <p>LEFT CLICK : SHOOT &nbsp;|&nbsp; RIGHT CLICK : BOMB &nbsp;|&nbsp; P / ESC : PAUSE</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage Intro -->
+    <div id="stage-intro" class="overlay hidden">
+      <div class="stage-intro-content">
+        <p id="stage-number" class="stage-number"></p>
+        <p id="stage-name" class="stage-name"></p>
+      </div>
+    </div>
+
+    <!-- Game Over -->
+    <div id="gameover-screen" class="overlay hidden">
+      <div class="title-content">
+        <h1 class="gameover-title">GAME OVER</h1>
+        <p id="final-score" class="game-subtitle">SCORE: 0</p>
+        <p class="start-prompt blink">CLICK TO RETRY</p>
+      </div>
+    </div>
+
+    <!-- Pause Screen -->
+    <div id="pause-screen" class="overlay hidden" style="background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); pointer-events: auto;">
+      <div class="title-content" style="pointer-events: auto;">
+        <h1 class="title-logo-text" style="color: #fff; letter-spacing: 5px;">PAUSED</h1>
+        <p class="start-prompt blink" style="margin-top: 30px; cursor: pointer; pointer-events: auto;" onclick="if(typeof Game !== 'undefined') Game.togglePause()">CLICK HERE OR PRESS P TO RESUME</p>
+        <div id="btn-return-map" style="display: inline-block; margin-top: 20px; padding: 12px 24px; border: 2px solid #44ccff; color: #44ccff; border-radius: 8px; cursor: pointer; font-size: 14px; background: rgba(0,0,0,0.5); pointer-events: auto;">
+          RETURN TO MAP (マップに戻る)
+        </div>
+      </div>
+    </div>
+
+    <!-- Physics Debug Panel -->
+    <div id="debug-panel" class="hidden" style="position:fixed; top:10px; right:10px; background:rgba(0,0,0,0.85); color:#fff; padding:15px; border:2px solid #44ccff; border-radius:8px; font-family:'DotGothic16', sans-serif; z-index:9999; width: 260px; pointer-events: auto;">
+      <h3 style="margin-top:0; color:#44ccff; border-bottom:1px solid #44ccff; padding-bottom:5px; font-size: 16px;">Physics Debug (￥)</h3>
+      
+      <div style="margin-bottom: 8px;">
+        <label style="display:flex; justify-content:space-between; font-size:12px;">Ascent Gravity: <span id="val-grav-asc">0.3</span></label>
+        <input type="range" id="debug-grav-asc" min="0.1" max="2.0" step="0.05" value="0.3" style="width:100%;">
+      </div>
+      
+      <div style="margin-bottom: 8px;">
+        <label style="display:flex; justify-content:space-between; font-size:12px;">Descent Gravity: <span id="val-grav-desc">0.6</span></label>
+        <input type="range" id="debug-grav-desc" min="0.1" max="2.0" step="0.05" value="0.6" style="width:100%;">
+      </div>
+      
+      <div style="margin-bottom: 8px;">
+        <label style="display:flex; justify-content:space-between; font-size:12px;">Jump Power: <span id="val-jump-pow">-5.7</span></label>
+        <input type="range" id="debug-jump-pow" min="-15" max="-2" step="0.1" value="-5.7" style="width:100%;">
+      </div>
+      
+      <div style="margin-bottom: 8px;">
+        <label style="display:flex; justify-content:space-between; font-size:12px;">Double Jump: <span id="val-djump-pow">-9.5</span></label>
+        <input type="range" id="debug-djump-pow" min="-15" max="-2" step="0.1" value="-9.5" style="width:100%;">
+      </div>
+
+      <div style="margin-bottom: 8px;">
+        <label style="display:flex; justify-content:space-between; font-size:12px;">Hold Boost: <span id="val-hold-boost">0.65</span></label>
+        <input type="range" id="debug-hold-boost" min="0.0" max="2.0" step="0.05" value="0.65" style="width:100%;">
+      </div>
+
+      <div style="margin-bottom: 8px;">
+        <label style="display:flex; justify-content:space-between; font-size:12px;">Hold Time (frames): <span id="val-hold-time">11.0</span></label>
+        <input type="range" id="debug-hold-time" min="0" max="60" step="1" value="11" style="width:100%;">
+      </div>
+
+      <div style="margin-bottom: 8px; border-top: 1px solid #444; padding-top: 5px; display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="debug-invincible" style="width: 16px; height: 16px;">
+        <label for="debug-invincible" style="font-size: 12px; color: #44ccff;">Invincible (無敵)</label>
+      </div>
+
+      <div style="margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="debug-oneshot" style="width: 16px; height: 16px;">
+        <label for="debug-oneshot" style="font-size: 12px; color: #ff4444;">One-Shot Kill (一撃必殺)</label>
+      </div>
+      
+      <div style="margin-bottom: 8px; border-top: 1px solid #444; padding-top: 5px;">
+        <label style="display:flex; justify-content:space-between; font-size:12px;">Speed: <span id="val-speed">6.0</span></label>
+        <input type="range" id="debug-speed" min="1.0" max="12.0" step="0.1" value="6.0" style="width:100%;">
+      </div>
+
+      <div style="margin-bottom: 8px; border-top: 1px solid #444; padding-top: 5px;">
+        <label style="display:flex; justify-content:space-between; font-size:12px;">Crouch Gravity Mult: <span id="val-crouch-grav">1.5</span></label>
+        <input type="range" id="debug-crouch-grav" min="1.0" max="4.0" step="0.1" value="1.5" style="width:100%;">
+      </div>
+
+      <div style="margin-bottom: 5px;">
+        <label style="display:flex; justify-content:space-between; font-size:12px;">Crouch Speed Mult: <span id="val-crouch-speed">0.6</span></label>
+        <input type="range" id="debug-crouch-speed" min="0.0" max="2.0" step="0.1" value="0.6" style="width:100%;">
+      </div>
+    </div>
+  </div>
+
+  <!-- Stage Editor -->
+  <div id="editor-screen" class="hidden">
+    <div id="editor-toolbar">
+      <span class="toolbar-title">STAGE EDITOR</span>
+      <button class="tool-btn editor-tool-btn active" id="etool-select" onclick="StageEditor.setTool('select')">Select</button>
+      <button class="tool-btn editor-tool-btn" id="etool-spawn" onclick="StageEditor.setTool('spawn')">Spawn</button>
+      <button class="tool-btn editor-tool-btn" id="etool-platform" onclick="StageEditor.setTool('platform')">Platform</button>
+      <button class="tool-btn editor-tool-btn" id="etool-zone" onclick="StageEditor.setTool('zone')">Zone</button>
+      <button class="tool-btn editor-tool-btn" id="etool-enemy" onclick="StageEditor.setTool('enemy')">Enemy</button>
+      <button class="tool-btn editor-tool-btn" id="etool-boss" onclick="StageEditor.setTool('boss')">Boss</button>
+      <div class="toolbar-sep"></div>
+      <button class="tool-btn export" onclick="StageEditor.exportJSON()">Export JSON</button>
+      <div class="toolbar-sep"></div>
+      <button class="tool-btn danger" onclick="StageEditor.close();document.getElementById('title-screen').classList.remove('hidden')">✕ Close</button>
+    </div>
+    <div id="editor-body">
+      <div id="editor-palette"><div id="editor-palette-content"></div></div>
+      <div id="editor-canvas-wrap">
+        <canvas id="editorCanvas"></canvas>
+        <div id="editor-coords">X:0  Y:0</div>
+        <div id="editor-zoom-info">Zoom: 50%</div>
+        <button id="editor-fullscreen-btn" onclick="StageEditor.toggleFullscreen()" style="position:absolute; bottom:10px; left:120px; background:rgba(0,0,0,0.5); border:1px solid #44ccff; color:#44ccff; font-size:10px; cursor:pointer; padding:2px 5px; border-radius:3px;">⛶ FULLSCREEN</button>
+      </div>
+      <div id="editor-props"><div id="editor-props-content"></div></div>
+    </div>
+  </div>
+
+  <!-- Export Modal -->
+  <div id="editor-export-modal" class="hidden">
+    <div class="export-box">
+      <h2>Export Stage JSON</h2>
+      <textarea id="export-textarea" class="export-textarea" readonly></textarea>
+      <div class="export-actions">
+        <button class="tool-btn" onclick="StageEditor.copyExport()">📋 Copy</button>
+        <button class="tool-btn export" onclick="StageEditor.downloadExport()">💾 Download</button>
+        <button class="tool-btn danger" onclick="StageEditor.closeExport()">Close</button>
+      </div>
+    </div>
+  </div>
+
+
+  <script src="js/asset_loader.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/renderer_ext.js"></script>
+  <script src="js/physics.js"></script>
+  <script src="js/backgrounds.js"></script>
+  <script src="js/projectiles.js"></script>
+  <script src="js/level.js"></script>
+  <script src="js/items.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/enemies.js"></script>
+  <script src="js/enemies_ext.js"></script>
+  <script src="js/boss.js"></script>
+  <script src="js/hud.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/ending.js"></script>
+  <script src="js/world_map.js"></script>
+  <script src="js/editor.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

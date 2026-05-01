@@ -1,0 +1,12 @@
+{
+  "shoot": { "osc": "square", "attack": 0.001, "decay": 0.06, "sustain": 0, "release": 0.04, "vol": -11, "note": "C6" },
+  "bombShoot": { "osc": "sawtooth", "attack": 0.01, "decay": 0.15, "sustain": 0, "release": 0.1, "vol": -8, "note": "A3" },
+  "explosion": { "noise": "brown", "decay": 0.3, "sustain": 0.1, "release": 0.2, "vol": -5, "bassNote": "C1" },
+  "jump": { "osc": "sine", "attack": 0.001, "decay": 0.12, "sustain": 0, "release": 0.08, "vol": -10, "note": "E5" },
+  "land": { "noise": "brown", "decay": 0.05, "sustain": 0, "release": 0.02, "vol": -15 },
+  "damage": { "noise": "white", "decay": 0.1, "sustain": 0, "release": 0.06, "vol": -7 },
+  "enemyDie": { "noise": "pink", "decay": 0.18, "sustain": 0, "release": 0.08, "vol": -9 },
+  "itemGet": { "osc": "sine", "attack": 0.01, "decay": 0.08, "sustain": 0.15, "release": 0.15, "vol": -9 },
+  "canShoot": { "freq": 200, "attack": 0.001, "decay": 0.04, "release": 0.01, "vol": -17 },
+  "bossIntro": { "osc": "sawtooth", "attack": 0.6, "decay": 1.2, "sustain": 0.25, "release": 1.2, "vol": -7, "note": "A1" }
+}

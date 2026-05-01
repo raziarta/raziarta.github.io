@@ -1,0 +1,6 @@
+{
+  "type": "bubbleSniper",
+  "hp": 25, "speed": 0, "damage": 8,
+  "hw": 22, "hh": 22,
+  "dropRate": 0.15
+}

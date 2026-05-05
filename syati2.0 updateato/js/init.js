@@ -90,10 +90,10 @@ function init() {
     G.d4 = new THREE.DirectionalLight(0xffffff, 0.45); G.d4.position.set(-2000, 3000, -2000); G.scene.add(G.d4);
 
     G.d1.castShadow = true;
-    G.d1.shadow.camera.left = G.d1.shadow.camera.bottom = -20;
-    G.d1.shadow.camera.right = G.d1.shadow.camera.top = 20;
+    G.d1.shadow.camera.left = G.d1.shadow.camera.bottom = -50;
+    G.d1.shadow.camera.right = G.d1.shadow.camera.top = 50;
     G.d1.shadow.camera.near = 0.5;
-    G.d1.shadow.camera.far = 150;
+    G.d1.shadow.camera.far = 500;
     G.d1.shadow.mapSize.set(2048, 2048);
     G.d1.shadow.bias = -0.0001;
     G.d1.shadow.normalBias = 0.02;

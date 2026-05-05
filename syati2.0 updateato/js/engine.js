@@ -100,7 +100,7 @@ function animate() {
 
     // 実際の光から3Dモデルの影を落とすため、平行光源(D1)をプレイヤーに追従させる（光の向き・強さは不変）
     if (G.d1) {
-        G.d1.position.set(pos.x + 20, pos.y + 30, pos.z + 20);
+        G.d1.position.set(pos.x + 100, pos.y + 150, pos.z + 100);
         G.d1.target.position.set(pos.x, pos.y, pos.z);
         G.d1.target.updateMatrixWorld();
     }

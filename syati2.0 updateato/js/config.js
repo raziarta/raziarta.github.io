@@ -1,176 +1,228 @@
 // ═══════════════════════════════════════════════════════
-//  config.js — グローバル設定 & 共有ステート
+//  init.js — ゲーム初期化・リセット・メインループ (animate)
 // ═══════════════════════════════════════════════════════
 'use strict';
 
-// ── ゲーム設定 ──
-const config = {
-    playerSpeed: 6.0,
-    jumpVelocity: 2.6,
-    jumpMultiplier: 0.65,
-    gravity: -9.8,
-    density: 0.16,
-    fogRange: 150,
-    areaSize: 9,
-    holdBoost: 0.38,
-    maxHoldTime: 9,
-    showHitboxes: false,
-    goalHeight: 400,
-    maxLives: 3,
-    damageProjectile: 1,
-    damageBubble: 1,
-    aiDamageFactor: 1.0,
-    aiCount: 0,
-    birdSpawnInterval: 30000,
-    // Projectile Stats
-    projectileSpeed: 20.0,
-    projectileRecoveryRate: 1.0,
-    // Bubble Stats
-    bubbleSpeedY: 5.0,
-    bubbleRecoveryRate: 1.0,
-    projectileAutoFire: false
-};
+function resetToHome() {
+    G.isStarted = false;
+    G.isGoalReached = false;
+    G.mapInitialized = false;
+    if (G.controls) G.controls.unlock();
+    if (G.animFrameId !== null) cancelAnimationFrame(G.animFrameId);
 
-// ── 定数 ──
-const PROJECTILE_LAYER = 1 << 20;
-const BUBBLE_LAYER = 1 << 21;
-const MAX_BLOCKS = 15000;
-const CHUNK = 50;
-const ROOM_PREFIX = "raziarta-ascent-room-";
+    const elList = document.getElementById('entity-list'); if (elList) elList.innerHTML = '';
+    const elHeight = document.getElementById('height-display'); if (elHeight) elHeight.innerText = '0m';
+    const elStart = document.getElementById('start-screen'); if (elStart) elStart.style.display = 'flex';
+    const elHome = document.getElementById('home-button'); if (elHome) elHome.classList.add('hidden');
+    const elTutUI = document.getElementById('tutorial-ui'); if (elTutUI) elTutUI.classList.add('hidden');
+    const elMpUI = document.getElementById('multiplayer-ui'); if (elMpUI) elMpUI.classList.remove('hidden');
+    const btnMain = document.getElementById('btn-main'); if (btnMain) btnMain.style.display = 'block';
+    const btnTut = document.getElementById('btn-tutorial'); if (btnTut) btnTut.style.display = 'block';
 
-const ASCENT_NAMES = [
-    "くろねこ", "しろくま", "ふくろう", "きんぎょ", "まんぼう", "かるがも", "うみがめ", "きつねび", "たぬきや", "うぐいす",
-    "ひまわり", "たんぽぽ", "あさがお", "どんぐり", "あじさい", "すずらん", "はなびら", "いなずま", "そよかぜ", "あおぞら",
-    "ほしぞら", "ゆうやけ", "あさやけ", "みずたま", "みかづき", "まぼろし", "あまおと", "わたあめ", "だいふく", "まっちゃ",
-    "たいやき", "おにぎり", "からあげ", "たこやき", "かまぼこ", "えだまめ", "せんべい", "かすてら", "はちみつ", "おりがみ",
-    "えんぴつ", "ほうせき", "びーだま", "はぐるま", "けんだま", "すごろく", "おもちゃ", "ふうせん", "ふでばこ", "やじるし"
-];
+    if (G.world) G.world.clear();
+    if (G.scene) { while (G.scene.children.length > 0) G.scene.remove(G.scene.children[0]); }
+    if (G.renderer) {
+        G.renderer.dispose();
+        if (G.renderer.domElement.parentNode) document.body.removeChild(G.renderer.domElement);
+        G.renderer = null;
+    }
+    const guiEl = document.querySelector('.dg.ac');
+    if (guiEl) guiEl.remove();
 
-// ── グローバル共有ステート (G) ──
-// すべてのモジュールがこのオブジェクトを介して状態を共有する
-const G = {
-    // Three.js コアオブジェクト
-    scene: null,
-    camera: null,
-    renderer: null,
-    controls: null,
-    world: null,
+    G.entities.length = 0;
+    G.mapObjects.length = 0;
+    G.mapGrid.clear();
+    G.pendingBlocks.length = 0;
+    G.membranes.length = 0;
+    G.walls.length = 0;
+    G.warningTapes.length = 0;
+    G.hitboxHelpers.length = 0;
+    G.projectiles.forEach(p => { G.scene.remove(p.mesh); });
+    G.projectiles.length = 0;
+    G.bubbles.length = 0;
+    G.explosions.forEach(exp => { G.scene.remove(exp.mesh); });
+    G.explosions.length = 0;
+    G.projectilePool.forEach(m => G.scene.remove(m)); G.projectilePool.length = 0;
+    G.bubblePool.forEach(m => G.scene.remove(m)); G.bubblePool.length = 0;
+    G.explosionPool.forEach(m => G.scene.remove(m)); G.explosionPool.length = 0;
+    G.netObjects.forEach((mesh) => { G.scene.remove(mesh); });
+    G.netObjects.clear();
+    G.netIdCounter = 0;
+    if (G.mapInstancedMesh) { G.scene.remove(G.mapInstancedMesh); G.mapInstancedMesh = null; }
+    if (G.lowPolyMapInstancedMesh) { G.scene.remove(G.lowPolyMapInstancedMesh); G.lowPolyMapInstancedMesh = null; }
+    G.freeInstanceIndices = [];
+    G.freeLowPolyInstanceIndices = [];
+    for (let i = MAX_BLOCKS - 1; i >= 0; i--) {
+        G.freeInstanceIndices.push(i);
+        G.freeLowPolyInstanceIndices.push(i);
+    }
+    if (typeof initWorker === 'function') initWorker();
+    G.nextMilestoneY = 50;
+    G.upgrades = { sphere: 0, bubble: 0 };
+    G.jumpCount = 0;
+    G.nextChunkY = 0;
+    G.highestY = 0;
+    G.startTime = 0;
+}
 
-    // ライト（デバッグGUIから参照）
-    ambientLight: null,
-    d1: null, d2: null, d3: null, d4: null,
+function init() {
+    if (typeof initAIModel === 'function' && !window.aiModel) initAIModel();
 
-    // プレイヤー
-    playerBody: null,
-    playerMesh: null,
-    playerModel: null,
-    birdModel: null,
-    bubbleModel: null,
+    G.scene = new THREE.Scene();
+    G.scene.background = new THREE.Color(0x001122);
+    G.scene.fog = new THREE.Fog(0x001122, 0, 75);
+    G.camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 5000);
 
-    // アセット（事前ロード）
-    skyTexture: null,
+    G.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+    G.renderer.setSize(innerWidth, innerHeight);
+    G.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    G.renderer.shadowMap.enabled = true;
+    G.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    G.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    G.renderer.toneMappingExposure = 0.46;
+    document.body.appendChild(G.renderer.domElement);
 
-    // マップ
-    mapInstancedMesh: null,
-    lowPolyMapInstancedMesh: null,
-    mapObjects: [],
-    mapGrid: new Map(),
-    pendingBlocks: [],
-    membranes: [],
-    walls: [],
-    warningTapes: [],
-    instancedBlockMap: new Map(),
-    freeInstanceIndices: [],
-    freeLowPolyInstanceIndices: [],
-    dummy: new THREE.Object3D(),
+    G.ambientLight = new THREE.AmbientLight(0xffffff, 0.80);
+    G.scene.add(G.ambientLight);
+    G.d1 = new THREE.DirectionalLight(0xffffff, 0.42); G.d1.position.set(2000, 3000, 2000); G.scene.add(G.d1);
+    G.d2 = new THREE.DirectionalLight(0xffffff, 0.42); G.d2.position.set(-2000, 3000, 2000); G.scene.add(G.d2);
+    G.d3 = new THREE.DirectionalLight(0xffffff, 0.42); G.d3.position.set(2000, 3000, -2000); G.scene.add(G.d3);
+    G.d4 = new THREE.DirectionalLight(0xffffff, 0.42); G.d4.position.set(-2000, 3000, -2000); G.scene.add(G.d4);
 
-    // 戦闘
-    projectiles: [],
-    projectilePool: [],
-    bubbles: [],
-    bubblePool: [],
-    explosions: [],
-    explosionPool: [],
+    G.d1.castShadow = true;
+    G.d1.shadow.camera.left = G.d1.shadow.camera.bottom = -50;
+    G.d1.shadow.camera.right = G.d1.shadow.camera.top = 50;
+    G.d1.shadow.camera.near = 0.5;
+    G.d1.shadow.camera.far = 500;
+    G.d1.shadow.mapSize.set(2048, 2048);
+    G.d1.shadow.bias = -0.0001;
+    G.d1.shadow.normalBias = 0.17;
 
-    // ネットワーク
-    netObjects: new Map(),
-    netIdCounter: 0,
-    networkEntities: new Map(),
-    peer: null,
-    connections: [],
-    hostConn: null,
-    isOnline: false,
-    isHost: false,
-    myPlayerName: "Guest",
-    myPeerId: null,
-    randomSeed: Math.random(),
-    peerNames: new Map(),
+    // 海面（高度な海面に一本化）
+    if (THREE.Water) {
+        const waterGeometry = new THREE.PlaneGeometry(2000, 2000);
+        G.water = new THREE.Water(
+            waterGeometry,
+            {
+                textureWidth: 512,
+                textureHeight: 512,
+                waterNormals: new THREE.TextureLoader().load('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/waternormals.jpg', function (texture) {
+                    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+                }),
+                sunDirection: new THREE.Vector3(20, 30, 20).normalize(),
+                sunColor: 0xffffff,
+                waterColor: 0x00aaff,
+                distortionScale: 3.7,
+                alpha: 0.85,
+                fog: G.scene.fog !== undefined
+            }
+        );
+        G.water.rotation.x = -Math.PI / 2;
+        G.water.position.set(config.areaSize / 2, -0.55, config.areaSize / 2);
+        if (G.water.material.uniforms['size']) G.water.material.uniforms['size'].value = 20.0;
+        G.scene.add(G.water);
+    }
 
-    // エンティティ
-    entities: [],
-    hitboxHelpers: [],
+    if (G.skyTexture) { G.scene.background = G.skyTexture; G.scene.environment = G.skyTexture; }
+    G.scene.fog.color.set(0x001122);
 
-    // 入力
-    keys: { w: false, a: false, s: false, d: false, space: false, shift: false, rightClick: false },
-    camDist: 3.3,
+    G.mapInstancedMesh = new THREE.InstancedMesh(G.sharedBlockGeo, G.sharedBlockMat, MAX_BLOCKS);
+    G.mapInstancedMesh.castShadow = true;
+    G.mapInstancedMesh.receiveShadow = true;
+    
+    G.lowPolyMapInstancedMesh = new THREE.InstancedMesh(G.sharedBlockGeo, G.sharedLowPolyBlockMat, MAX_BLOCKS);
+    G.lowPolyMapInstancedMesh.castShadow = false;
+    G.lowPolyMapInstancedMesh.receiveShadow = true;
 
-    // ゲームステート
-    isStarted: false,
-    isGoalReached: false,
-    isDead: false,
-    deathTimer: 0,
-    deathTextEl: null,
-    playerLives: 3,
-    playerProjectileStock: 0.0,
-    playerBubbleStock: 0.0,
-    lastFireTimeProjectile: 0,
-    lastFireTimeBubble: 0,
-    lastAnimTime: 0,
-    mapInitialized: false,
-    currentMode: 'main',
-    animFrameId: null,
-    highestY: 0,
-    lowestY: 0,
-    nextMilestoneY: 50,
-    upgrades: { sphere: 0, bubble: 0 },
-    jumpCount: 0,
-    nextChunkY: 0,
-    startTime: 0,
-    isGrounded: false,
-    minJumpInterval: 0,
-    isJumping: false,
-    jumpTimer: 0,
-    lastSpaceState: false,
-    maxJumps: 2,
+    G.dummy.scale.set(0, 0, 0);
+    for (let i = 0; i < MAX_BLOCKS; i++) { 
+        G.dummy.updateMatrix(); 
+        G.mapInstancedMesh.setMatrixAt(i, G.dummy.matrix); 
+        G.lowPolyMapInstancedMesh.setMatrixAt(i, G.dummy.matrix);
+    }
+    G.mapInstancedMesh.instanceMatrix.needsUpdate = true;
+    G.lowPolyMapInstancedMesh.instanceMatrix.needsUpdate = true;
+    G.scene.add(G.mapInstancedMesh);
+    G.scene.add(G.lowPolyMapInstancedMesh);
 
-    // ローダー
-    loadingManager: null,
-    loader: null,
-    textureLoader: null,
-    exrLoader: null,
+    G.world = new OIMO.World({ gravity: [0, config.gravity, 0], iterations: 24, info: false });
 
-    // 共有ジオメトリ・マテリアル
-    sharedProjectileGeo: null,
-    sharedProjectileMat: null,
-    sharedExplosionGeo: null,
-    sharedExplosionMat: null,
-    sharedBubbleGeo: null,
-    sharedBlockGeo: null,
-    sharedBlockMat: null,
-    sharedLowPolyBlockMat: null,
+    createPlayer();
+    if (!G.isOnline || G.isHost) {
+        for (let i = 0; i < config.aiCount; i++) createAI(`AI-${i + 1}`, i + 1);
+    }
 
-    // Worker
-    worker: null,
+    if (G.currentMode === 'tutorial') {
+        document.getElementById('tutorial-ui').classList.remove('hidden');
+        createFloor(27, 50); initTapes(27, 50); buildTutorialMap(); createInvisibleWalls(27, 50);
+        setTimeout(() => { G.entities.forEach((ent, idx) => { ent.body.resetPosition(1.5 + idx * 0.5, 5.0, 1.5); }); }, 100);
+        document.getElementById('start-screen').style.display = 'none';
+    } else {
+        createFloor(config.areaSize, config.areaSize);
+        initTapes(config.areaSize, config.areaSize);
+        createInvisibleWalls(config.areaSize, config.areaSize);
+        G.highestY = 0;
+        generateChunk(0);
+        if (G.isOnline && !G.isHost) document.getElementById('start-screen').style.display = 'none';
+        else document.getElementById('start-screen').style.display = 'flex';
+    }
+
+    setupControls();
+    G.controls.addEventListener('lock', () => { document.getElementById('start-screen').style.display = 'none'; document.getElementById('home-button').classList.add('hidden'); });
+    G.controls.addEventListener('unlock', () => { document.getElementById('home-button').classList.remove('hidden'); });
+
+    // 鳥システム
+    window.birds = [];
+    window.lastBirdSpawnTime = 0;
+    window.createBirdMesh = function() {
+        if (!G.birdModel) return null;
+        const group = G.birdModel.clone();
+        let mixer = null;
+        if (G.birdAnimations && G.birdAnimations.length > 0) {
+            mixer = new THREE.AnimationMixer(group);
+            const action = mixer.clipAction(G.birdAnimations[0]);
+            action.play();
+            action.time = Math.random() * G.birdAnimations[0].duration;
+        }
+        return { group, mixer, wingL: group.getObjectByName("WingL"), wingR: group.getObjectByName("WingR") };
+    };
+    window.spawnBirds = function() {
+        const count = 10 + Math.floor(Math.random() * 10);
+        const angle = Math.random() * Math.PI * 2;
+        const spawnDist = 50;
+        const center = new THREE.Vector3(config.areaSize/2, 0, config.areaSize/2);
+        const startX = center.x + Math.cos(angle) * spawnDist;
+        const startZ = center.z + Math.sin(angle) * spawnDist;
+        const pY = G.playerBody ? G.playerBody.position.y : 0;
+        const startY = pY + 5 + Math.random() * 10;
+        const targetAngle = angle + Math.PI + (Math.random() * 0.4 - 0.2);
+        const dirX = Math.cos(targetAngle), dirZ = Math.sin(targetAngle);
+        for (let i=0; i<count; i++) {
+            const b = window.createBirdMesh();
+            if (!b) continue;
+            b.group.position.set(startX + (Math.random()-0.5)*15, startY + (Math.random()-0.5)*10, startZ + (Math.random()-0.5)*15);
+            b.group.lookAt(b.group.position.x + dirX, b.group.position.y, b.group.position.z + dirZ);
+            G.scene.add(b.group);
+            window.birds.push({ 
+                mesh: b.group, 
+                mixer: b.mixer,
+                wingL: b.wingL, 
+                wingR: b.wingR, 
+                dir: new THREE.Vector3(dirX, 0, dirZ).normalize(), 
+                speed: (12 + Math.random() * 4) * 0.6, 
+                wingPhase: Math.random() * Math.PI * 2, 
+                distance: 0 
+            });
+        }
+    };
 
     // DOM要素キャッシュ
-    heightEl: null,
-    timeEl: null,
-    airEl: null,
-    entityListEl: null,
-};
+    G.heightEl = document.getElementById('height-display');
+    G.timeEl = document.getElementById('time-display');
+    G.airEl = document.getElementById('air-indicator');
+    G.entityListEl = document.getElementById('entity-list');
 
-// freeInstanceIndices の初期化
-for (let i = MAX_BLOCKS - 1; i >= 0; i--) {
-    G.freeInstanceIndices.push(i);
-    G.freeLowPolyInstanceIndices.push(i);
+    initGUI();
+    G.isGoalReached = false;
+    animate();
 }

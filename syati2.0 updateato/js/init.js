@@ -79,15 +79,15 @@ function init() {
     G.renderer.shadowMap.enabled = true;
     G.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     G.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    G.renderer.toneMappingExposure = 0.35;
+    G.renderer.toneMappingExposure = 0.46;
     document.body.appendChild(G.renderer.domElement);
 
-    G.ambientLight = new THREE.AmbientLight(0xffffff, 0.82);
+    G.ambientLight = new THREE.AmbientLight(0xffffff, 0.80);
     G.scene.add(G.ambientLight);
-    G.d1 = new THREE.DirectionalLight(0xffffff, 0.45); G.d1.position.set(2000, 3000, 2000); G.scene.add(G.d1);
-    G.d2 = new THREE.DirectionalLight(0xffffff, 0.45); G.d2.position.set(-2000, 3000, 2000); G.scene.add(G.d2);
-    G.d3 = new THREE.DirectionalLight(0xffffff, 0.45); G.d3.position.set(2000, 3000, -2000); G.scene.add(G.d3);
-    G.d4 = new THREE.DirectionalLight(0xffffff, 0.45); G.d4.position.set(-2000, 3000, -2000); G.scene.add(G.d4);
+    G.d1 = new THREE.DirectionalLight(0xffffff, 0.42); G.d1.position.set(2000, 3000, 2000); G.scene.add(G.d1);
+    G.d2 = new THREE.DirectionalLight(0xffffff, 0.42); G.d2.position.set(-2000, 3000, 2000); G.scene.add(G.d2);
+    G.d3 = new THREE.DirectionalLight(0xffffff, 0.42); G.d3.position.set(2000, 3000, -2000); G.scene.add(G.d3);
+    G.d4 = new THREE.DirectionalLight(0xffffff, 0.42); G.d4.position.set(-2000, 3000, -2000); G.scene.add(G.d4);
 
     G.d1.castShadow = true;
     G.d1.shadow.camera.left = G.d1.shadow.camera.bottom = -50;

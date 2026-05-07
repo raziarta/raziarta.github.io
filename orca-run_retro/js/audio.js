@@ -203,16 +203,24 @@ const AudioManager = {
     this.bgmPlaying='leviathan';
   },
 
-  // === Title BGM - Atmospheric & Epic Opening ===
+   // === Title BGM - Atmospheric & Epic Opening ===
   startTitleBGM() {
     if(!this.initialized || this.bgmPlaying === 'title') return;
     this.stopAll();
     Tone.Transport.bpm.value = 110;
     
+    // 既に楽器が生成済みの場合は、再生だけ開始して終了
+    if (this.titleParts) {
+      this.titleParts.loops.forEach(l => l.start(0));
+      Tone.Transport.start();
+      this.bgmPlaying = 'title';
+      return;
+    }
+
+    // --- 初回実行時のみ楽器を生成 ---
     const rev = new Tone.Reverb({decay:8, wet:0.5}).toDestination();
     const dly = new Tone.FeedbackDelay({delayTime:'4n.', feedback:0.4, wet:0.3}).connect(rev);
     
-    // Shoegaze pad
     const tPad = new Tone.PolySynth(Tone.Synth, {
       oscillator: { type: 'sine4' },
       envelope: { attack: 4, decay: 3, sustain: 0.6, release: 5 },
@@ -223,7 +231,6 @@ const AudioManager = {
       try { tPad.triggerAttackRelease(chords[i], '4m', t, 0.4); } catch(e) {}
     }, [0,1,2,3], '4m');
 
-    // Crystal lead
     const tLead = new Tone.Synth({
       oscillator: { type: 'sine' },
       envelope: { attack: 0.8, decay: 2, sustain: 0.2, release: 3 },
@@ -234,7 +241,6 @@ const AudioManager = {
       try { if(n) tLead.triggerAttackRelease(n, '2n', t, 0.35); } catch(e) {}
     }, mel, '1n');
 
-    // Steady heartbeat bass
     const tBass = new Tone.MonoSynth({
       oscillator: { type: 'sine' },
       envelope: { attack: 0.1, decay: 0.5, sustain: 0.8, release: 1 },
@@ -252,8 +258,35 @@ const AudioManager = {
     console.log("Start Title BGM");
   },
 
-  stopAll(){try{Tone.Transport.stop();this.roadParts.loops?.forEach(l=>l.stop());this.roadParts.noise?.stop();this.tutorialParts.loops?.forEach(l=>l.stop());this.bossParts.loops?.forEach(l=>l.stop());this.abyssParts.loops?.forEach(l=>l.stop());this.lastBossParts.loops?.forEach(l=>l.stop());this.skyParts?.loops?.forEach(l=>l.stop());this.oceanParts?.loops?.forEach(l=>l.stop());this.coreParts?.loops?.forEach(l=>l.stop());this.endingParts?.loops?.forEach(l=>l.stop());this.leviathanParts?.loops?.forEach(l=>l.stop());this.titleParts?.loops?.forEach(l=>l.stop());this.bgmPlaying=null;console.log("Stop BGM");}catch(e){}},
-  setPauseFilter(isPaused){if(!this.initialized||!this.lpf)return;if(isPaused)this.lpf.frequency.rampTo(800,0.2);else this.lpf.frequency.rampTo(20000,0.2);},
+
+    stopAll() {
+    try {
+      Tone.Transport.stop();
+      // 全てのBGMパートをリスト化して一括停止
+      const partsList = [
+        this.roadParts, this.tutorialParts, this.bossParts, this.abyssParts, 
+        this.lastBossParts, this.skyParts, this.oceanParts, this.coreParts, 
+        this.endingParts, this.leviathanParts, this.titleParts
+      ];
+      partsList.forEach(p => {
+        if (!p) return;
+        if (p.loops) p.loops.forEach(l => l.stop());
+        if (p.noise) p.noise.stop();
+        if (p.synths) {
+          // 鳴り続けているシンセサイザーの音（リリース）を強制停止
+          p.synths.forEach(s => {
+            if (s.releaseAll) s.releaseAll();
+            else if (s.triggerRelease) s.triggerRelease();
+          });
+        }
+      });
+      this.bgmPlaying = null;
+      console.log("Stop BGM All");
+    } catch (e) {
+      console.warn("StopAll Error:", e);
+    }
+  },
+
 
   // Environmental SE
   playWindGust() {

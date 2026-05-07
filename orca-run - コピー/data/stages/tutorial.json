@@ -1,0 +1,28 @@
+{
+  "id": "tutorial",
+  "number": "STAGE 0",
+  "name": "TUTORIAL: BASIC OPERATIONS",
+  "scrollSpeed": 2.5,
+  "length": 65000,
+  "bgPhase": 0,
+  "backgrounds": [
+    { "src": "assets/backgrounds/stage1/sky.png", "speed": 0.1 },
+    { "src": "assets/backgrounds/stage1/buildings_far.png", "speed": 0.3 }
+  ],
+  "groundColor": "#556677",
+  "platforms": [],
+  "waves": [
+    { "dist": 500, "enemies": ["tireShark"] },
+    { "dist": 62000, "enemies": ["vendingMachine"] },
+    { "dist": 63000, "enemies": ["tireShark", "tireShark"] }
+  ],
+  "subtitles": [
+    { "dist": 100, "text": "Welcome to ORCA RUN." },
+    { "dist": 500, "text": "TESTING ZONE: No enemies for 60,000m." },
+    { "dist": 30000, "text": "STILL TESTING... Keep adjusting your physics!" },
+    { "dist": 61100, "text": "TESTING ZONE END. Be careful!" },
+    { "dist": 64000, "text": "Destroy the mid-boss to finish!" }
+  ],
+  "midBoss": { "dist": 64500, "type": "cartShark" },
+  "boss": null
+}

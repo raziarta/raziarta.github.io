@@ -1,0 +1,7 @@
+{
+  "name": "Static Spark",
+  "hp": 1,
+  "score": 200, "damage": 12,
+  "hw": 15, "hh": 15,
+  "dropRate": 0.1
+}

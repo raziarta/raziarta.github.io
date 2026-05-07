@@ -1,0 +1,6 @@
+{
+  "type": "krakenX",
+  "hp": 150, "damage": 10,
+  "hw": 120, "hh": 120,
+  "dropRate": 1.0
+}

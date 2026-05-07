@@ -1,0 +1,258 @@
+{
+  "name": "第三層 - 終焉の淵",
+  "number": "ステージ6",
+  "length": 12200,
+  "bgPhase": 5,
+  "scrollSpeed": 3.2,
+  "backgrounds": [
+    {
+      "layer": "abyss_void",
+      "speed": 0.03,
+      "src": "assets/backgrounds/stage3/night_sky.png"
+    },
+    {
+      "layer": "abyss_deep",
+      "speed": 0.12,
+      "src": "assets/backgrounds/stage3/crater.png"
+    },
+    {
+      "layer": "abyss_mid",
+      "speed": 0.28,
+      "src": "assets/backgrounds/stage3/edge.png"
+    },
+    {
+      "layer": "abyss_near",
+      "speed": 0.5,
+      "src": "assets/backgrounds/stage3/abyss.png"
+    }
+  ],
+  "groundColor": "#050508",
+  "groundLineColor": "#101018",
+  "hasPitfalls": true,
+  "platforms": [
+    {
+      "x": -1390.2316730849816,
+      "y": 586,
+      "w": 15157.994483765813,
+      "h": 450,
+      "_type": "platform",
+      "_startDragX": -900.6856089725079,
+      "_startDragY": 586,
+      "sticky": false
+    },
+    {
+      "x": 600,
+      "y": 360,
+      "w": 100,
+      "h": 16
+    },
+    {
+      "x": 1200,
+      "y": 330,
+      "w": 120,
+      "h": 16
+    },
+    {
+      "x": 1900,
+      "y": 370,
+      "w": 100,
+      "h": 16
+    },
+    {
+      "x": 2600,
+      "y": 340,
+      "w": 130,
+      "h": 16
+    },
+    {
+      "x": 3300,
+      "y": 360,
+      "w": 110,
+      "h": 16
+    },
+    {
+      "x": 4000,
+      "y": 320,
+      "w": 100,
+      "h": 16
+    },
+    {
+      "x": 4700,
+      "y": 380,
+      "w": 140,
+      "h": 16
+    },
+    {
+      "x": 5400,
+      "y": 350,
+      "w": 100,
+      "h": 16
+    },
+    {
+      "x": 6100,
+      "y": 330,
+      "w": 120,
+      "h": 16
+    },
+    {
+      "x": 6800,
+      "y": 370,
+      "w": 110,
+      "h": 16
+    },
+    {
+      "x": 7500,
+      "y": 340,
+      "w": 100,
+      "h": 16
+    },
+    {
+      "x": 8200,
+      "y": 360,
+      "w": 130,
+      "h": 16
+    }
+  ],
+  "waves": [
+    {
+      "dist": 400,
+      "enemies": [
+        "morayEel",
+        "morayEel",
+        "submarineCrab",
+        "carrierSeal"
+      ]
+    },
+    {
+      "dist": 1200,
+      "enemies": [
+        "carrierSeal",
+        "carrierSeal",
+        "morayEel",
+        "morayEel"
+      ]
+    },
+    {
+      "dist": 2000,
+      "enemies": [
+        "submarineCrab",
+        "submarineCrab",
+        "submarineCrab",
+        "carrierSeal",
+        "morayEel"
+      ]
+    },
+    {
+      "dist": 2800,
+      "enemies": [
+        "morayEel",
+        "morayEel",
+        "morayEel",
+        "morayEel"
+      ]
+    },
+    {
+      "dist": 3600,
+      "enemies": [
+        "carrierSeal",
+        "submarineCrab",
+        "morayEel",
+        "carrierSeal",
+        "submarineCrab"
+      ]
+    },
+    {
+      "dist": 4400,
+      "enemies": [
+        "morayEel",
+        "morayEel",
+        "submarineCrab",
+        "submarineCrab",
+        "carrierSeal"
+      ]
+    },
+    {
+      "dist": 5200,
+      "enemies": [
+        "carrierSeal",
+        "carrierSeal",
+        "carrierSeal",
+        "morayEel"
+      ]
+    },
+    {
+      "dist": 6000,
+      "enemies": [
+        "submarineCrab",
+        "morayEel",
+        "morayEel",
+        "carrierSeal",
+        "submarineCrab",
+        "morayEel"
+      ]
+    },
+    {
+      "dist": 7000,
+      "enemies": [
+        "carrierSeal",
+        "carrierSeal",
+        "morayEel",
+        "morayEel",
+        "submarineCrab"
+      ]
+    },
+    {
+      "dist": 8000,
+      "enemies": [
+        "morayEel",
+        "morayEel",
+        "morayEel",
+        "submarineCrab",
+        "submarineCrab",
+        "carrierSeal"
+      ]
+    },
+    {
+      "dist": 9000,
+      "enemies": [
+        "carrierSeal",
+        "carrierSeal",
+        "carrierSeal",
+        "morayEel",
+        "morayEel"
+      ]
+    }
+  ],
+  "midBoss": null,
+  "boss": {
+    "dist": 11931,
+    "_type": "boss",
+    "_startDragX": 11265,
+    "_startDragY": 50,
+    "_startDragDist": 11265
+  },
+  "subtitles": [
+      {
+          "dist": 100,
+          "text": "第三層。ついに底が見えてきた。"
+      },
+      {
+          "dist": 3500,
+          "text": "空間が歪んでいる。ここはもはや、元の世界ではない。"
+      },
+      {
+          "dist": 7000,
+          "text": "全てが静止しているようだ。だが、確かな悪意を感じる。"
+      },
+      {
+          "dist": 11000,
+          "text": "終わりの時が近い。深淵の主が待っている。"
+      }
+  ],
+  "objects": [],
+  "relicChips": [
+    { "relicId": "compass", "x": 7000, "y": 430 }
+  ],
+  "spawnX": -961,
+  "spawnY": 467
+}

@@ -1,0 +1,306 @@
+{
+  "name": "第二層 - 異形の回廊",
+  "number": "ステージ5",
+  "length": 13350,
+  "bgPhase": 4,
+  "scrollSpeed": 3,
+  "backgrounds": [
+    {
+      "layer": "void_sky",
+      "speed": 0.05,
+      "src": "assets/backgrounds/stage3/night_sky.png"
+    },
+    {
+      "layer": "void_far",
+      "speed": 0.18,
+      "src": "assets/backgrounds/stage3/crater.png"
+    },
+    {
+      "layer": "void_mid",
+      "speed": 0.35,
+      "src": "assets/backgrounds/stage3/edge.png"
+    },
+    {
+      "layer": "void_near",
+      "speed": 0.6,
+      "src": "assets/backgrounds/stage3/abyss.png"
+    }
+  ],
+  "groundColor": "#080a10",
+  "groundLineColor": "#181a20",
+  "hasPitfalls": true,
+  "platforms": [
+    {
+      "x": -1181.8449671874168,
+      "y": 586,
+      "w": 16178.578354778389,
+      "h": 450,
+      "_type": "platform",
+      "_startDragX": -857.8449671874168,
+      "_startDragY": 586,
+      "sticky": false
+    },
+    {
+      "x": 500,
+      "y": 370,
+      "w": 100,
+      "h": 16
+    },
+    {
+      "x": 1100,
+      "y": 340,
+      "w": 120,
+      "h": 16
+    },
+    {
+      "x": 1800,
+      "y": 360,
+      "w": 100,
+      "h": 16
+    },
+    {
+      "x": 2500,
+      "y": 320,
+      "w": 130,
+      "h": 16
+    },
+    {
+      "x": 3200,
+      "y": 350,
+      "w": 110,
+      "h": 16
+    },
+    {
+      "x": 3900,
+      "y": 380,
+      "w": 100,
+      "h": 16
+    },
+    {
+      "x": 4600,
+      "y": 330,
+      "w": 140,
+      "h": 16
+    },
+    {
+      "x": 5300,
+      "y": 370,
+      "w": 100,
+      "h": 16
+    },
+    {
+      "x": 6000,
+      "y": 340,
+      "w": 120,
+      "h": 16
+    },
+    {
+      "x": 6700,
+      "y": 360,
+      "w": 110,
+      "h": 16
+    },
+    {
+      "x": 7400,
+      "y": 320,
+      "w": 100,
+      "h": 16
+    },
+    {
+      "x": 8100,
+      "y": 350,
+      "w": 130,
+      "h": 16
+    },
+    {
+      "x": 8800,
+      "y": 380,
+      "w": 100,
+      "h": 16
+    },
+    {
+      "x": 9500,
+      "y": 340,
+      "w": 120,
+      "h": 16
+    }
+  ],
+  "waves": [
+    {
+      "dist": 300,
+      "enemies": [
+        "morayEel",
+        "submarineCrab",
+        "tireShark",
+        "carrierSeal"
+      ]
+    },
+    {
+      "dist": 1000,
+      "enemies": [
+        "carrierSeal",
+        "morayEel",
+        "morayEel",
+        "vendingMachine"
+      ]
+    },
+    {
+      "dist": 1800,
+      "enemies": [
+        "submarineCrab",
+        "submarineCrab",
+        "acHermitCrab",
+        "carrierSeal",
+        "morayEel"
+      ]
+    },
+    {
+      "dist": 2600,
+      "enemies": [
+        "morayEel",
+        "morayEel",
+        "cartShark",
+        "morayEel",
+        "submarineCrab"
+      ]
+    },
+    {
+      "dist": 3400,
+      "enemies": [
+        "carrierSeal",
+        "carrierSeal",
+        "tireShark",
+        "carrierSeal"
+      ]
+    },
+    {
+      "dist": 4200,
+      "enemies": [
+        "submarineCrab",
+        "morayEel",
+        "vendingMachine",
+        "carrierSeal",
+        "morayEel"
+      ]
+    },
+    {
+      "dist": 5000,
+      "enemies": [
+        "morayEel",
+        "morayEel",
+        "acHermitCrab",
+        "submarineCrab",
+        "submarineCrab",
+        "carrierSeal"
+      ]
+    },
+    {
+      "dist": 5800,
+      "enemies": [
+        "carrierSeal",
+        "morayEel",
+        "cartShark",
+        "morayEel",
+        "submarineCrab"
+      ]
+    },
+    {
+      "dist": 6600,
+      "enemies": [
+        "submarineCrab",
+        "submarineCrab",
+        "tireShark",
+        "submarineCrab",
+        "morayEel",
+        "morayEel"
+      ]
+    },
+    {
+      "dist": 7400,
+      "enemies": [
+        "carrierSeal",
+        "carrierSeal",
+        "vendingMachine",
+        "morayEel",
+        "submarineCrab"
+      ]
+    },
+    {
+      "dist": 8200,
+      "enemies": [
+        "morayEel",
+        "morayEel",
+        "acHermitCrab",
+        "morayEel",
+        "morayEel"
+      ]
+    },
+    {
+      "dist": 9000,
+      "enemies": [
+        "carrierSeal",
+        "submarineCrab",
+        "cartShark",
+        "morayEel",
+        "carrierSeal",
+        "submarineCrab"
+      ]
+    },
+    {
+      "dist": 10000,
+      "enemies": [
+        "submarineCrab",
+        "submarineCrab",
+        "tireShark",
+        "carrierSeal",
+        "carrierSeal",
+        "morayEel"
+      ]
+    },
+    {
+      "dist": 11000,
+      "enemies": [
+        "morayEel",
+        "morayEel",
+        "vendingMachine",
+        "morayEel",
+        "carrierSeal",
+        "submarineCrab"
+      ]
+    }
+  ],
+  "midBoss": {
+    "dist": 13235,
+    "type": "abyssalChimera",
+    "_type": "midboss",
+    "_startDragX": 13113,
+    "_startDragY": 50,
+    "_startDragDist": 13113
+  },
+  "boss": null,
+  "subtitles": [
+      {
+          "dist": 100,
+          "text": "第二層。音が消えた。自分の足音すら聞こえない。"
+      },
+      {
+          "dist": 3000,
+          "text": "壁に刻まれた文字。読めない言語。人のものではない。"
+      },
+      {
+          "dist": 6000,
+          "text": "異形たちが徘徊している。ここは彼らの領域だ。"
+      },
+      {
+          "dist": 9000,
+          "text": "現実が歪んでいる。進むしかない。"
+      }
+  ],
+  "objects": [],
+  "relicChips": [
+    { "relicId": "flashlight", "x": 3500, "y": 420 },
+    { "relicId": "research_log", "x": 9000, "y": 440 }
+  ],
+  "spawnX": -849,
+  "spawnY": 459
+}

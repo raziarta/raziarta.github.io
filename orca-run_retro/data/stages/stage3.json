@@ -1,0 +1,290 @@
+{
+  "name": "巨大クレーターの縁",
+  "number": "ステージ3",
+  "length": 16500,
+  "bgPhase": 2,
+  "scrollSpeed": 3,
+  "trackVertical": true,
+  "trackStrength": 0.06,
+  "hasPitfalls": true,
+  "backgrounds": [
+    {
+      "layer": "night_sky",
+      "speed": 0.08,
+      "src": "assets/backgrounds/stage3/night_sky.png"
+    },
+    {
+      "layer": "crater",
+      "speed": 0.3,
+      "src": "assets/backgrounds/stage3/crater.png"
+    },
+    {
+      "layer": "edge",
+      "speed": 0.55,
+      "src": "assets/backgrounds/stage3/edge.png"
+    },
+    {
+      "layer": "abyss",
+      "speed": 0.85,
+      "src": "assets/backgrounds/stage3/abyss.png"
+    }
+  ],
+  "groundColor": "#1e1828",
+  "groundLineColor": "#2e2838",
+  "platforms": [
+    {
+      "x": -1495,
+      "y": 586,
+      "w": 13332,
+      "h": 450,
+      "_type": "platform",
+      "_startDragX": -1211,
+      "_startDragY": 586,
+      "sticky": false
+    },
+    {
+      "x": 800,
+      "y": 370,
+      "w": 120,
+      "h": 16
+    },
+    {
+      "x": 1600,
+      "y": 340,
+      "w": 100,
+      "h": 16
+    },
+    {
+      "x": 2400,
+      "y": 360,
+      "w": 130,
+      "h": 16
+    },
+    {
+      "x": 3200,
+      "y": 320,
+      "w": 100,
+      "h": 16
+    },
+    {
+      "x": 4000,
+      "y": 350,
+      "w": 140,
+      "h": 16
+    },
+    {
+      "x": 4800,
+      "y": 380,
+      "w": 110,
+      "h": 16
+    },
+    {
+      "x": 5600,
+      "y": 340,
+      "w": 120,
+      "h": 16
+    },
+    {
+      "x": 6400,
+      "y": 360,
+      "w": 100,
+      "h": 16
+    },
+    {
+      "x": 7200,
+      "y": 330,
+      "w": 130,
+      "h": 16
+    },
+    {
+      "x": 8000,
+      "y": 370,
+      "w": 100,
+      "h": 16
+    },
+    {
+      "x": 8800,
+      "y": 350,
+      "w": 140,
+      "h": 16
+    },
+    {
+      "x": 9600,
+      "y": 340,
+      "w": 110,
+      "h": 16
+    },
+    {
+      "x": 10833,
+      "y": 586,
+      "w": 2100,
+      "h": 5500,
+      "_type": "platform",
+      "_startDragX": 10833,
+      "_startDragY": 586,
+      "sticky": false
+    },
+    {
+      "x": 12000,
+      "y": 3000,
+      "w": 1900,
+      "h": 10000,
+      "_type": "platform",
+      "_startDragX": 12000,
+      "_startDragY": 3000,
+      "sticky": false
+    }
+  ],
+  "waves": [
+    {
+      "dist": 400,
+      "enemies": [
+        "tireShark",
+        "tireShark",
+        "vendingMachine"
+      ]
+    },
+    {
+      "dist": 1200,
+      "enemies": [
+        "acHermitCrab",
+        "tireShark"
+      ]
+    },
+    {
+      "dist": 2000,
+      "enemies": [
+        "vendingMachine",
+        "vendingMachine",
+        "tireShark",
+        "tireShark"
+      ]
+    },
+    {
+      "dist": 2800,
+      "enemies": [
+        "acHermitCrab",
+        "acHermitCrab"
+      ]
+    },
+    {
+      "dist": 3600,
+      "enemies": [
+        "tireShark",
+        "vendingMachine",
+        "acHermitCrab",
+        "tireShark"
+      ]
+    },
+    {
+      "dist": 4400,
+      "enemies": [
+        "tireShark",
+        "tireShark",
+        "tireShark",
+        "vendingMachine"
+      ]
+    },
+    {
+      "dist": 5200,
+      "enemies": [
+        "acHermitCrab",
+        "vendingMachine",
+        "tireShark"
+      ]
+    },
+    {
+      "dist": 6000,
+      "enemies": [
+        "tireShark",
+        "tireShark",
+        "vendingMachine",
+        "vendingMachine",
+        "acHermitCrab"
+      ]
+    },
+    {
+      "dist": 7000,
+      "enemies": [
+        "acHermitCrab",
+        "acHermitCrab",
+        "tireShark"
+      ]
+    },
+    {
+      "dist": 8000,
+      "enemies": [
+        "vendingMachine",
+        "vendingMachine",
+        "tireShark",
+        "tireShark",
+        "acHermitCrab"
+      ]
+    },
+    {
+      "dist": 9000,
+      "enemies": [
+        "tireShark",
+        "tireShark",
+        "tireShark",
+        "tireShark"
+      ]
+    },
+    {
+      "dist": 10000,
+      "enemies": [
+        "acHermitCrab",
+        "vendingMachine",
+        "vendingMachine",
+        "tireShark"
+      ]
+    }
+  ],
+  "midBoss": null,
+  "boss": {
+    "dist": 12287,
+    "_type": "boss",
+    "_startDragX": 11522,
+    "_startDragY": 50,
+    "_startDragDist": 11522
+  },
+  "subtitles": [
+      {
+          "dist": 100,
+          "text": "巨大なクレーターの縁に辿り着いた。底が見えない。"
+      },
+      {
+          "dist": 3000,
+          "text": "足元が崩れやすい。慎重に進む必要がある。"
+      },
+      {
+          "dist": 6000,
+          "text": "遠くから、地の底から這い出るような咆哮が聞こえる。"
+      },
+      {
+          "dist": 9000,
+          "text": "ついに、ここまで来た。引き返す道はとうにない。"
+      },
+      {
+          "dist": 13500,
+          "text": "巨大な影がうごめいている。覚悟を決めろ。"
+      }
+  ],
+  "objects": [
+    {
+      "type": "safe",
+      "x": 11236,
+      "y": -2971,
+      "w": 35760,
+      "h": 38380,
+      "_type": "zone",
+      "_startDragX": 11242,
+      "_startDragY": -2971
+    }
+  ],
+  "relicChips": [
+    { "relicId": "binoculars", "x": 6500, "y": 300 }
+  ],
+  "spawnX": -1040,
+  "spawnY": 470
+}

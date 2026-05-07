@@ -1,0 +1,57 @@
+{
+  "id": "tutorial",
+  "number": "\u30b9\u30c6\u30fc\u30b80",
+  "name": "\u3053\u306e\u4e16\u754c\u306e\u6210\u308c\u679c\u3066",
+  "scrollSpeed": 1.2,
+  "length": 7500,
+  "stickyPlatforms": false,
+  "bgPhase": 0,
+  "backgrounds": [
+    {
+      "layer": "sky",
+      "speed": 0.08,
+      "src": "assets/backgrounds/stage1/sky.png"
+    },
+    {
+      "layer": "buildings_far",
+      "speed": 0.2,
+      "src": "assets/backgrounds/stage1/buildings_far.png"
+    },
+    {
+      "layer": "buildings_mid",
+      "speed": 0.45,
+      "src": "assets/backgrounds/stage1/buildings_mid.png"
+    },
+    {
+      "layer": "debris_near",
+      "speed": 0.75,
+      "src": "assets/backgrounds/stage1/debris_near.png"
+    }
+  ],
+  "groundColor": "#4a5060",
+  "hasPitfalls": true,
+  "platforms": [
+    {
+      "x": -500,
+      "y": 586,
+      "w": 10000,
+      "h": 450,
+      "_type": "platform"
+    }
+  ],
+  "waves": [
+    { "dist": 1000, "enemies": ["tireShark"] },
+    { "dist": 2500, "enemies": ["vendingMachine"] }
+  ],
+  "subtitles": [
+    { "dist": 100, "text": "人類は絶滅した。文明の騒音はもう聞こえない。" },
+    { "dist": 1000, "text": "彼らは足を得た。次は大地を駆けるために。" },
+    { "dist": 2000, "text": "砂と瓦礫に覆われた、見渡す限りの成れの果て。" },
+    { "dist": 3000, "text": "この世界はもう誰のものでもない。だからこそ　どこへだって行ける。" }
+  ],
+  "relicChips": [
+    { "relicId": "dog_tag", "x": 4500, "y": 550 }
+  ],
+  "midBoss": null,
+  "boss": null
+}

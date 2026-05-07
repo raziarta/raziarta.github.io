@@ -1,0 +1,6 @@
+﻿{
+  "type": "neonJelly",
+  "hp": 6, "speed": 0.5, "damage": 10,
+  "hw": 22, "hh": 30,
+  "dropRate": 0.1
+}

@@ -1,0 +1,265 @@
+{
+  "name": "第一層 - 衰退した遺構",
+  "number": "ステージ4",
+  "chapter": 2,
+  "chapterTitle": "第2章　深淵",
+  "length": 13700,
+  "bgPhase": 3,
+  "scrollSpeed": 2.8,
+  "backgrounds": [
+    {
+      "layer": "sunless_sea",
+      "speed": 0.2,
+      "src": "assets/backgrounds/stage4/sunless_sea.png"
+    }
+  ],
+  "groundColor": "#0e1218",
+  "groundLineColor": "#1e2228",
+  "platforms": [
+    {
+      "x": 600,
+      "y": 380,
+      "w": 110,
+      "h": 16
+    },
+    {
+      "x": 1300,
+      "y": 350,
+      "w": 100,
+      "h": 16
+    },
+    {
+      "x": 2000,
+      "y": 330,
+      "w": 130,
+      "h": 16
+    },
+    {
+      "x": 2700,
+      "y": 370,
+      "w": 100,
+      "h": 16
+    },
+    {
+      "x": 3500,
+      "y": 340,
+      "w": 120,
+      "h": 16
+    },
+    {
+      "x": 4200,
+      "y": 360,
+      "w": 110,
+      "h": 16
+    },
+    {
+      "x": 5000,
+      "y": 330,
+      "w": 140,
+      "h": 16
+    },
+    {
+      "x": 5800,
+      "y": 380,
+      "w": 100,
+      "h": 16
+    },
+    {
+      "x": 6600,
+      "y": 350,
+      "w": 120,
+      "h": 16
+    },
+    {
+      "x": 7400,
+      "y": 340,
+      "w": 100,
+      "h": 16
+    },
+    {
+      "x": 8200,
+      "y": 370,
+      "w": 130,
+      "h": 16
+    },
+    {
+      "x": 9000,
+      "y": 330,
+      "w": 110,
+      "h": 16
+    },
+    {
+      "x": 9800,
+      "y": 360,
+      "w": 100,
+      "h": 16
+    },
+    {
+      "x": 10600,
+      "y": 350,
+      "w": 120,
+      "h": 16
+    },
+    {
+      "x": 11400,
+      "y": 340,
+      "w": 140,
+      "h": 16
+    },
+    {
+      "x": -1244.0000000000018,
+      "y": 588,
+      "w": 17109.17068616707,
+      "h": 153.91304347826087,
+      "_type": "platform",
+      "_startDragX": -870.0000000000018,
+      "_startDragY": 588,
+      "sticky": false
+    }
+  ],
+  "waves": [
+    {
+      "dist": 400,
+      "enemies": [
+        "submarineCrab",
+        "morayEel"
+      ]
+    },
+    {
+      "dist": 1200,
+      "enemies": [
+        "carrierSeal",
+        "submarineCrab"
+      ]
+    },
+    {
+      "dist": 2000,
+      "enemies": [
+        "morayEel",
+        "morayEel",
+        "submarineCrab"
+      ]
+    },
+    {
+      "dist": 2800,
+      "enemies": [
+        "carrierSeal",
+        "carrierSeal"
+      ]
+    },
+    {
+      "dist": 3600,
+      "enemies": [
+        "submarineCrab",
+        "morayEel",
+        "carrierSeal"
+      ]
+    },
+    {
+      "dist": 4400,
+      "enemies": [
+        "morayEel",
+        "morayEel",
+        "morayEel"
+      ]
+    },
+    {
+      "dist": 5200,
+      "enemies": [
+        "carrierSeal",
+        "submarineCrab",
+        "morayEel"
+      ]
+    },
+    {
+      "dist": 6000,
+      "enemies": [
+        "submarineCrab",
+        "submarineCrab",
+        "carrierSeal"
+      ]
+    },
+    {
+      "dist": 6800,
+      "enemies": [
+        "morayEel",
+        "carrierSeal",
+        "submarineCrab",
+        "morayEel"
+      ]
+    },
+    {
+      "dist": 7600,
+      "enemies": [
+        "carrierSeal",
+        "carrierSeal",
+        "morayEel"
+      ]
+    },
+    {
+      "dist": 8400,
+      "enemies": [
+        "submarineCrab",
+        "morayEel",
+        "morayEel",
+        "carrierSeal"
+      ]
+    },
+    {
+      "dist": 9200,
+      "enemies": [
+        "morayEel",
+        "submarineCrab",
+        "carrierSeal",
+        "submarineCrab"
+      ]
+    },
+    {
+      "dist": 10000,
+      "enemies": [
+        "carrierSeal",
+        "carrierSeal",
+        "morayEel",
+        "morayEel"
+      ]
+    },
+    {
+      "dist": 11000,
+      "enemies": [
+        "submarineCrab",
+        "submarineCrab",
+        "submarineCrab",
+        "morayEel"
+      ]
+    }
+  ],
+  "midBoss": {
+    "dist": 13000,
+    "type": "abyssAngler"
+  },
+  "boss": null,
+  "subtitles": [
+      {
+          "dist": 100,
+          "text": "クレーターの内壁を降りていく。残骸の建物が見える。"
+      },
+      {
+          "dist": 2500,
+          "text": "かつてここにも人がいた。壁にはまだ文字が残っている。"
+      },
+      {
+          "dist": 5000,
+          "text": "光が届かなくなってきた。だが、何かが蠢いている。"
+      },
+      {
+          "dist": 8000,
+          "text": "第一層。地上の名残が、少しずつ消えていく。"
+      }
+  ],
+  "objects": [],
+  "relicChips": [
+    { "relicId": "diving_helmet", "x": 5000, "y": 450 }
+  ],
+  "spawnX": -946,
+  "spawnY": 494
+}

@@ -1,0 +1,7 @@
+﻿{
+  "name": "Cloud Puffer",
+  "hp": 6,
+  "score": 150, "damage": 10,
+  "hw": 20, "hh": 20,
+  "dropRate": 0.1
+}

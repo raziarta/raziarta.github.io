@@ -408,11 +408,11 @@ function animate() {
         }
     }
 
-    // プレイヤー座標同期（20fps = 3フレームに1回、受信側はlerp補間で十分スムーズ）
+    // プレイヤー座標同期（30fps = 2フレームに1回、受信側はlerp補間で十分スムーズ）
     if (G.isOnline) {
         if (!window._posSyncCounter) window._posSyncCounter = 0;
         window._posSyncCounter++;
-        if (window._posSyncCounter % 3 === 0) {
+        if (window._posSyncCounter % 2 === 0) {
             broadcastEvent(1,{id:G.myPeerId,x:G.playerBody.position.x,y:G.playerBody.position.y,z:G.playerBody.position.z,jumps:G.jumpCount});
         }
     }

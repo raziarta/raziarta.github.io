@@ -79,6 +79,32 @@ function broadcastEvent(eventId, rawData) {
     }
 }
 
+const PEER_OPTIONS = {
+    debug: 3,
+    secure: true,
+    config: {
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            {
+                urls: 'turn:relay.metered.ca:80',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            },
+            {
+                urls: 'turn:relay.metered.ca:443',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            },
+            {
+                urls: 'turn:relay.metered.ca:443?transport=tcp',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            }
+        ]
+    }
+};
+
 function setupHost() {
     logStatus("Creating room...");
     let attempt = 1;
@@ -89,7 +115,7 @@ function setupHost() {
         }
         const tryId = ROOM_PREFIX + attempt;
         console.log(`[Multiplayer] Attempting to host room: ${tryId}`);
-        G.peer = new Peer(tryId, { debug: 3, secure: true });
+        G.peer = new Peer(tryId, PEER_OPTIONS);
 
         G.peer.on('open', (id) => {
             console.log(`[Multiplayer] Successfully opened peer with ID: ${id}`);
@@ -148,7 +174,7 @@ function setupHost() {
 
 function setupClient() {
     console.log("[Multiplayer] Initializing Peer for Client...");
-    G.peer = new Peer({ debug: 3, secure: true });
+    G.peer = new Peer(PEER_OPTIONS);
 
     G.peer.on('open', (id) => {
         console.log(`[Multiplayer] Client Peer opened with ID: ${id}`);

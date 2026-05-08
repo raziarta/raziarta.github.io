@@ -1,6 +1,0 @@
-{
-  "type": "coreShard",
-  "hp": 30, "speed": 0, "damage": 20,
-  "hw": 20, "hh": 25,
-  "dropRate": 0.15
-}

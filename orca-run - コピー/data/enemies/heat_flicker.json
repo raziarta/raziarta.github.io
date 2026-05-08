@@ -1,6 +1,0 @@
-{
-  "type": "heatFlicker",
-  "hp": 10, "speed": 0, "damage": 18,
-  "hw": 15, "hh": 15,
-  "dropRate": 0.12
-}

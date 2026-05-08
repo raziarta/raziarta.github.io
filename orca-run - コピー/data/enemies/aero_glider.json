@@ -1,7 +1,0 @@
-{
-  "name": "Aero Glider",
-  "hp": 1,
-  "score": 250, "damage": 15,
-  "hw": 18, "hh": 12,
-  "dropRate": 0.15
-}

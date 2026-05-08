@@ -6,6 +6,8 @@
 function resetToHome() {
     G.isStarted = false;
     G.isGoalReached = false;
+    G.isDead = false;
+    if (G.deathTextEl) G.deathTextEl.style.display = 'none';
     G.mapInitialized = false;
     if (G.controls) G.controls.unlock();
     if (G.animFrameId !== null) cancelAnimationFrame(G.animFrameId);

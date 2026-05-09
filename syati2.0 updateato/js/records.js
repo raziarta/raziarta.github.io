@@ -61,9 +61,9 @@ function showRecordsUI() {
             background: #f4f4f4;
             color: #111;
             z-index: 99999;
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
             display: none;
-            padding: 0 0 0 80px;
+            padding: 0;
             pointer-events: auto;
             user-select: none;
         `;
@@ -134,15 +134,13 @@ function renderRecordsContent() {
 
     let html = `
         <div style="display: flex; flex-direction: column; height: 100%; width: calc(100% - 160px); position: relative;">
-            <!-- Header (メインメニューの .menu-header と同じ位置に絶対配置) -->
-            <div style="position: absolute; top: 20px; left: 0; border-bottom: 3px solid #111; width: 100%; padding-bottom: 5px; z-index: 5;">
-                <div style="font-size: 10px; font-weight: bold; color: #555; margin-bottom: 5px;">■ SCREEN TITLE</div>
-                <h1 style="font-size: 48px; font-weight: 900; letter-spacing: 4px; margin: 0; text-transform: uppercase; color: #111; display: flex; align-items: center; gap: 15px;">
-                    <span style="width: 8px; height: 35px; background: #111; display: inline-block; border-radius: 2px;"></span>RACE RECORDS
-                </h1>
+            <!-- Header (メインメニューの .menu-header と共通のレイアウト) -->
+            <div class="menu-header" style="position: absolute; top: 20px; left: 80px; width: calc(100% - 160px); border-bottom-color: #111;">
+                <div class="screen-title">■ SCREEN TITLE</div>
+                <div class="main-title" style="color: #111;">RACE RECORDS</div>
             </div>
 
-            <div style="display: flex; gap: 40px; overflow: hidden; flex: 1; margin-top: 115px;">
+            <div style="display: flex; gap: 40px; overflow: hidden; flex: 1; margin-top: 140px; margin-left: 80px;">
                 <!-- Sidebar -->
                 <div style="width: 288px; display: flex; flex-direction: column; gap: 12px;">
                     <div style="font-size: 10px; font-weight: bold; color: #555; margin-bottom: -5px;">■ RECORDS</div>

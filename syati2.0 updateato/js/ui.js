@@ -172,7 +172,7 @@ const UPGRADE_POOLS = {
         { id: 'p2', name: "ス〇イパー", desc: "弾速：とてもはやい\nダメージ：おおきい", stats: { projectileRecoveryRate: 1.0, damageProjectile: 2, projectileSpeed: 40.0, projectileRangeMult: 2.0 } },
         { id: 'p3', name: "キャノン", desc: "回復速度：おそい\nダメージ：とてもおおきい", stats: { projectileRecoveryRate: 0.5, damageProjectile: 5, projectileSpeed: 15.0 } },
         { id: 'p4', name: "マガジン", desc: "最大装弾数が\n2発増加する", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 20.0, maxProjectileStock: 5.0 } },
-        { id: 'p5', name: "〇ック", desc: "弾のサイズが大きく\nダメージも少し高い", stats: { projectileRecoveryRate: 1.0, damageProjectile: 2, projectileSpeed: 20.0, projectileRadiusMult: 2.5 } },
+        { id: 'p5', name: "〇ック", desc: "弾のサイズが大きく\nダメージも少し高い", stats: { projectileRecoveryRate: 1.0, damageProjectile: 2, projectileSpeed: 20.0, projectileRadiusMult: 2.125 } },
         { id: 'p6', name: "ジェ〇ニ", desc: "弾が斜め2方向に\n分裂して飛ぶ", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 20.0, projectileSplit: 2 } },
         { id: 'p7', name: "ト〇プレット", desc: "弾が正面と斜めの\n3方向に飛ぶ", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 20.0, projectileSplit: 3 } },
         { id: 'p8', name: "〇プレッド", desc: "周囲12方向に\n弾をばらまく", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 20.0, projectileSplit: 12 } },

@@ -126,7 +126,29 @@ function animate() {
     if (mag>0) { vel.x+=((mx/mag)*config.playerSpeed-vel.x)*0.14; vel.z+=((mz/mag)*config.playerSpeed-vel.z)*0.14; }
     else { vel.x*=0.8; vel.z*=0.8; }
 
-    _tmpOffset.set(0,0.97,G.camDist).applyQuaternion(G.camera.quaternion);
+    let targetFov = 75;
+    let yOffset = 0.97;
+    let zOffset = G.camDist;
+    let hidePlayer = false;
+
+    if (G.camDist <= 1.0) {
+        // スコープモードへの遷移 (camDist: 1.0 -> 0.0)
+        const t = 1.0 - G.camDist; // 0.0(通常) -> 1.0(完全ズーム)
+        targetFov = 75 - 45 * t; // FOV 75 -> 30 に拡大
+        yOffset = 0.97 - (0.97 - 0.05) * t; // 高さを口元へ (0.05)
+        zOffset = G.camDist * (1 - t) - 0.1 * t; // カメラをモデルの前方へ (-0.1)
+        if (t > 0.8) hidePlayer = true;
+    }
+
+    if (G.playerMesh) {
+        G.playerMesh.visible = !hidePlayer;
+    }
+    
+    // FOVの滑らかな補間
+    G.camera.fov += (targetFov - G.camera.fov) * 0.2;
+    G.camera.updateProjectionMatrix();
+
+    _tmpOffset.set(0, yOffset, zOffset).applyQuaternion(G.camera.quaternion);
     G.camera.position.set(pos.x+_tmpOffset.x, pos.y+_tmpOffset.y, pos.z+_tmpOffset.z);
 
     // 実際の光から3Dモデルの影を落とすため、平行光源(D1)をプレイヤーに追従させる（光の向き・強さは不変）

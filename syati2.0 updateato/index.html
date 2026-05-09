@@ -17,13 +17,13 @@
         #home-button:hover { background: rgba(51,65,85,0.9); border-color: #64b4ff; }
         #entity-list { position: absolute; top: 30px; left: 30px; font-size: 13px; font-weight: 600; color: #94a3b8; line-height: 1.6; text-shadow: 0 0 5px #000; }
         #crosshair { width: 4px; height: 4px; border-radius: 50%; background: rgba(100,240,255,0.9); box-shadow: 0 0 8px rgba(0,242,254,0.6); }
-        #crosshair-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) translateX(-10px); display: flex; align-items: center; gap: 12px; pointer-events: none; }
+        #crosshair-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) translateX(-20px); display: flex; align-items: center; gap: 12px; pointer-events: none; }
         .ammo-gauge-group { display: flex; gap: 4px; align-items: center; }
-        .ammo-segment { width: 12px; height: 4px; background: rgba(0,0,0,0.4); border-radius: 1px; overflow: hidden; border: 1px solid rgba(100,180,255,0.15); }
+        .ammo-segment { width: 25px; height: 7px; background: rgba(0,0,0,0.4); border-radius: 1px; overflow: hidden; border: 1px solid rgba(100,180,255,0.15); }
         .ammo-segment-inner { height: 100%; width: 0%; transition: width 0.1s; }
-        .shot-inner { background: linear-gradient(90deg, #00f2fe, #4facfe); }
-        .bubble-inner { background: linear-gradient(90deg, #38bdf8, #0ea5e9); }
-        #air-indicator { position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 700; letter-spacing: 2px; color: #00f2fe; text-shadow: 0 0 10px rgba(0,242,254,0.5); opacity: 1; transition: opacity 0.2s; }
+        .shot-inner { background: #38bdf8; }
+        .bubble-inner { background: #c084fc; }
+        #air-indicator { position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); font-size: 14px; font-weight: 700; letter-spacing: 2px; color: #fe4469; text-shadow: 0 0 10px rgba(56, 189, 248, 0.5); opacity: 1; transition: opacity 0.2s; }
         .hidden { display: none !important; }
         #air-indicator.hidden { display: block !important; opacity: 0; }
         #start-screen { position: absolute; inset: 0; background: transparent; color: #333; display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; padding: 100px 0 0 80px; z-index: 100; overflow: hidden; }
@@ -179,7 +179,7 @@
             </div>
             <div id="crosshair"></div>
             <div id="gauge-bubble-group" class="ammo-gauge-group">
-                <div class="ammo-segment" style="width: 30px;"><div id="bubble-seg" class="ammo-segment-inner bubble-inner"></div></div>
+                <div class="ammo-segment" style="width: 45px;"><div id="bubble-seg" class="ammo-segment-inner bubble-inner"></div></div>
             </div>
         </div>
         <div id="air-indicator" class="hidden">・ AIR JUMP READY</div>
@@ -205,6 +205,7 @@
                 <p style="margin-bottom: 8px;"><kbd>赤しま</kbd>通れない所</p>
                 <p style="margin-bottom: 8px;"><kbd>右クリック / Shift</kbd>弾丸発射</p>
                 <p style="margin-bottom: 8px;"><kbd>B</kbd>シャボン玉</p>
+                <p style="margin-bottom: 8px;"><kbd>Wheel</kbd>拡大縮小 / スコープモード</p>
             </div>
         </div>
         <div id="reward-screen" class="hidden" style="position: absolute; inset: 0; background: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; pointer-events: none;">

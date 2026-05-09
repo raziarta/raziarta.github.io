@@ -13,9 +13,24 @@ function requestFire(type) {
 
     if (type === 0) {
         const spawnX = startPos.x + dir.x * 0.6;
-        const spawnY = startPos.y + 0.75;
+        const spawnY = startPos.y + 0.05;
         const spawnZ = startPos.z + dir.z * 0.6;
         const speed = config.projectileSpeed;
+
+        // レティクルが指す遠方の「着弾点」を計算 (コンバージェンス方式)
+        // 近距離でもレティクルに合いやすいよう、焦点距離を20mに短縮
+        const targetPoint = new THREE.Vector3(
+            G.camera.position.x + camDir.x * 20,
+            G.camera.position.y + camDir.y * 20,
+            G.camera.position.z + camDir.z * 20
+        );
+
+        // 発射原点からその着弾点への方向ベクトルに補正する
+        const correctedDir = new THREE.Vector3(
+            targetPoint.x - spawnX,
+            targetPoint.y - spawnY,
+            targetPoint.z - spawnZ
+        ).normalize();
 
         const props = {
             radiusMult: config.projectileRadiusMult || 1.0,
@@ -44,25 +59,24 @@ function requestFire(type) {
 
         const split = config.projectileSplit || 1;
         if (split === 1) {
-            fire(dir.x, dir.y, dir.z);
+            fire(correctedDir.x, correctedDir.y, correctedDir.z);
         } else if (split === 2) {
             const axis = new THREE.Vector3(0, 1, 0);
-            const d1 = dir.clone().applyAxisAngle(axis, Math.PI / 12);
-            const d2 = dir.clone().applyAxisAngle(axis, -Math.PI / 12);
+            const d1 = correctedDir.clone().applyAxisAngle(axis, Math.PI / 12);
+            const d2 = correctedDir.clone().applyAxisAngle(axis, -Math.PI / 12);
             fire(d1.x, d1.y, d1.z);
             fire(d2.x, d2.y, d2.z);
         } else if (split === 3) {
             const axis = new THREE.Vector3(0, 1, 0);
-            const d1 = dir.clone().applyAxisAngle(axis, Math.PI / 12);
-            const d2 = dir.clone().applyAxisAngle(axis, -Math.PI / 12);
-            fire(dir.x, dir.y, dir.z);
+            const d1 = correctedDir.clone().applyAxisAngle(axis, Math.PI / 12);
+            const d2 = correctedDir.clone().applyAxisAngle(axis, -Math.PI / 12);
+            fire(correctedDir.x, correctedDir.y, correctedDir.z);
             fire(d1.x, d1.y, d1.z);
             fire(d2.x, d2.y, d2.z);
         } else if (split === 12) {
             const axis = new THREE.Vector3(0, 1, 0);
-            // Also spread them slightly upwards/downwards if we wanted, but horizontal is fine
             for (let i = 0; i < 12; i++) {
-                const d = dir.clone().applyAxisAngle(axis, (Math.PI * 2 / 12) * i);
+                const d = correctedDir.clone().applyAxisAngle(axis, (Math.PI * 2 / 12) * i);
                 fire(d.x, d.y, d.z);
             }
         }

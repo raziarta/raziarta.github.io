@@ -38,7 +38,7 @@ function initAssets() {
     G.rgbeLoader = new THREE.RGBELoader(G.loadingManager);
 
     // ── 共有ジオメトリ・マテリアル ──
-    G.sharedProjectileGeo = new THREE.SphereGeometry(0.15, 8, 8);
+    G.sharedProjectileGeo = new THREE.SphereGeometry(0.127, 8, 8);
     G.sharedProjectileMat = new THREE.MeshStandardMaterial({
         color: 0xffffff, emissive: 0x444444, metalness: 0.8, roughness: 0.2
     });

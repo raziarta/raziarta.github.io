@@ -184,7 +184,8 @@ function setupControls() {
 
     window.addEventListener('wheel', (e) => {
         if (G.controls.isLocked) {
-            G.camDist = Math.max(1.0, Math.min(5.0, G.camDist + e.deltaY * 0.005));
+            // スコープモード用に追加で 0.0 までスクロール可能にする
+            G.camDist = Math.max(0.0, Math.min(5.0, G.camDist + e.deltaY * 0.005));
         }
     }, { passive: true });
 

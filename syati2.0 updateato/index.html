@@ -425,15 +425,14 @@
         }
 
         // ── ONLINE設定関連 ──
-        let _onlinePhase = 'menu'; // 'menu', 'edit_name', 'scanning', 'select_room'
+        let _onlinePhase = 'menu'; // 'menu', 'edit_name'
         let _currentOnlineMenuIdx = 0; // 0: NAME, 1: HOST, 2: JOIN, 3: EXIT LOBBY (ロビー中のみ)
         let isOnlineFocused = false;
-        let _scannedRooms = [];
-        let _selectedRoomIdx = 0;
+        let _joinRoomTarget = 1; // JOIN ROOMの対象部屋番号 (1-10)
         const _onlineItems = [
             { key: 'name', label: 'PLAYER NAME', hasValue: true },
             { key: 'host', label: 'HOST ROOM', hasValue: false },
-            { key: 'join', label: 'JOIN ROOM', hasValue: false }
+            { key: 'join', label: 'JOIN ROOM', hasValue: true }
         ];
 
         // グローバル公開: マウスホバー・クリック用
@@ -458,12 +457,17 @@
         window.clickOptionAction = function() {
             executeOptionAction();
         };
+        window.clickChangeJoinRoom = function(dir) {
+            _joinRoomTarget = Math.max(1, Math.min(10, _joinRoomTarget + dir));
+            updateOnlineSettingsUI();
+        };
 
         // 初回のみHTML構造を生成する
         function initOnlineSettingsUI() {
             const container = document.getElementById('online-settings-list');
             if (!container) return;
             container.innerHTML = _onlineItems.map((s, idx) => {
+                const isJoin = (s.key === 'join');
                 const valHtml = s.hasValue ? `
                     <div id="online-value-${idx}" class="setting-value-plate">
                         <span class="setting-value"></span>
@@ -476,7 +480,8 @@
                         <div class="setting-label-plate" style="width: ${s.hasValue ? '315px' : '500px'};">
                             <span>${s.label}</span>
                             <div class="setting-arrow-group">
-                                <span class="setting-arrow" onclick="event.stopPropagation(); clickOnlineMenu()">▶</span>
+                                ${isJoin ? '<span class="setting-arrow left-arrow" onclick="event.stopPropagation(); clickChangeJoinRoom(-1)">◀</span>' : ''}
+                                <span class="setting-arrow right-arrow" onclick="event.stopPropagation(); ${isJoin ? 'clickChangeJoinRoom(1)' : 'clickOnlineMenu()'}">▶</span>
                             </div>
                         </div>
                         ${valHtml}
@@ -503,12 +508,22 @@
                 if (isTabActive) row.classList.add('focused-tab');
                 else row.classList.remove('focused-tab');
 
-                // 値の更新 (PLAYER NAMEのみ)
+                // 値の更新
                 if (s.hasValue) {
                     const valPlate = document.getElementById(`online-value-${idx}`);
                     if (valPlate) {
                         const valEl = valPlate.querySelector('.setting-value');
-                        if (valEl) valEl.innerText = G.myPlayerName;
+                        if (valEl) {
+                            if (s.key === 'name') valEl.innerText = G.myPlayerName;
+                            else if (s.key === 'join') valEl.innerText = 'ROOM ' + _joinRoomTarget;
+                        }
+                    }
+                    // JOIN ROOMの矢印暗転
+                    if (s.key === 'join') {
+                        const lArrow = row.querySelector('.left-arrow');
+                        const rArrow = row.querySelector('.right-arrow');
+                        if (lArrow) lArrow.className = `setting-arrow left-arrow ${_joinRoomTarget <= 1 ? 'dimmed' : ''}`;
+                        if (rArrow) rArrow.className = `setting-arrow right-arrow ${_joinRoomTarget >= 10 ? 'dimmed' : ''}`;
                     }
                 }
             });
@@ -706,7 +721,8 @@
                     document.getElementById('mp-status').innerText = 'ALREADY IN A ROOM';
                     return;
                 }
-                startRoomScan();
+                document.getElementById('mp-status').innerText = `CONNECTING TO ROOM ${_joinRoomTarget}...`;
+                setupClient(_joinRoomTarget);
             } else if (_currentOnlineMenuIdx === 3) {
                 // EXIT LOBBY — dispatchEventで既存のaddEventListenerを発動
                 const exitBtn = document.getElementById('btn-exit-lobby');
@@ -714,105 +730,6 @@
                     exitBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
                 }
             }
-        }
-
-        // ルームスキャン（ルーム一覧は online-rooms-list に描画）
-        function startRoomScan() {
-            _onlinePhase = 'scanning';
-            document.getElementById('mp-status').innerText = 'SCANNING ROOMS...';
-            _scannedRooms = [];
-            
-            const scanPromises = [];
-            for (let i = 1; i <= 10; i++) {
-                scanPromises.push(new Promise(resolve => {
-                    const tempPeer = new Peer();
-                    const testConn = tempPeer.connect('ascent-room-' + i, { reliable: true });
-                    let answered = false;
-                    
-                    testConn.on('open', () => {
-                        testConn.send({ type: 'ping' });
-                    });
-                    
-                    testConn.on('data', (data) => {
-                        if (data && data.type === 'pong' && !answered) {
-                            answered = true;
-                            _scannedRooms.push({ roomId: i, hostName: data.hostName || 'Unknown' });
-                            testConn.close();
-                            tempPeer.destroy();
-                            resolve();
-                        }
-                    });
-                    
-                    setTimeout(() => {
-                        if (!answered) {
-                            answered = true;
-                            if (testConn) testConn.close();
-                            if (tempPeer) tempPeer.destroy();
-                            resolve();
-                        }
-                    }, 2000);
-                }));
-            }
-            
-            Promise.all(scanPromises).then(() => {
-                _onlinePhase = 'select_room';
-                _selectedRoomIdx = 0;
-                document.getElementById('mp-status').innerText = `FOUND ${_scannedRooms.length} ROOM(S)`;
-                renderOnlineRoomList();
-            });
-        }
-
-        // ルーム一覧は動的生成（数が可変のためinnerHTML方式）
-        function renderOnlineRoomList() {
-            const container = document.getElementById('online-rooms-list');
-            if (!container) return;
-            
-            if (_onlinePhase !== 'select_room') {
-                container.style.display = 'none';
-                return;
-            }
-            container.style.display = 'block';
-            
-            if (_scannedRooms.length === 0) {
-                container.innerHTML = `
-                    <div style="font-size: 11px; font-weight: bold; color: #fff; margin-bottom: 8px;">▸ SELECT ROOM [▲▼ / ▶ JOIN]</div>
-                    <div class="setting-row"><div class="setting-label-plate" style="width: 500px; background: #333;"><span style="color: #aaa;">NO ROOMS FOUND</span></div></div>
-                `;
-            } else {
-                container.innerHTML = `
-                    <div style="font-size: 11px; font-weight: bold; color: #fff; margin-bottom: 8px;">▸ SELECT ROOM [▲▼ / ▶ JOIN]</div>
-                ` + _scannedRooms.map((room, idx) => {
-                    const isActive = (idx === _selectedRoomIdx);
-                    return `
-                        <div class="setting-row ${isActive ? 'active focused-tab' : ''}" 
-                             onmouseenter="setRoomIdx(${idx})" onclick="joinSelectedRoom()"
-                             style="margin-bottom: 2px; cursor: pointer;">
-                            <div class="setting-label-plate" style="width: 500px; ${isActive ? 'background: #0ea5e9 !important;' : 'background: #444;'}">
-                                <span>ROOM ${room.roomId} · ${room.hostName}</span>
-                                <div class="setting-arrow-group">
-                                    <span class="setting-arrow" style="${isActive ? '' : 'opacity:0;'}">▶ JOIN</span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-        }
-
-        window.setRoomIdx = function(idx) {
-            _selectedRoomIdx = idx;
-            renderOnlineRoomList();
-        };
-        window.joinSelectedRoom = function() {
-            if (_scannedRooms.length > 0) {
-                connectToRoom(_scannedRooms[_selectedRoomIdx].roomId);
-            }
-        };
-
-        function connectToRoom(roomId) {
-            document.getElementById('mp-status').innerText = `CONNECTING TO ROOM ${roomId}...`;
-            document.getElementById('online-rooms-list').style.display = 'none';
-            setupClient(roomId);
         }
 
         window.handleOnlineKey = function(e) {
@@ -842,34 +759,29 @@
                     _currentOnlineMenuIdx = Math.min(maxIdx, _currentOnlineMenuIdx + 1);
                     updateOnlineSettingsUI();
                     return true;
-                } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D' || e.key === 'Enter') {
+                } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                    // JOIN ROOMにフォーカス中なら部屋番号を変更
+                    if (_currentOnlineMenuIdx === 2) {
+                        _joinRoomTarget = Math.max(1, _joinRoomTarget - 1);
+                        updateOnlineSettingsUI();
+                        return true;
+                    }
+                    return false; // 他の項目はタブ切替に委譲
+                } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+                    // JOIN ROOMにフォーカス中なら部屋番号を変更
+                    if (_currentOnlineMenuIdx === 2) {
+                        _joinRoomTarget = Math.min(10, _joinRoomTarget + 1);
+                        updateOnlineSettingsUI();
+                        return true;
+                    }
                     executeOnlineAction();
                     return true;
-                } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
-                    return false; // Not handled, fallback to tab switch
+                } else if (e.key === 'Enter') {
+                    executeOnlineAction();
+                    return true;
                 }
             } else if (_onlinePhase === 'edit_name') {
                 // モーダルがフォーカスを持っているので、ここには来ない
-                return true;
-            } else if (_onlinePhase === 'select_room') {
-                if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
-                    _selectedRoomIdx = Math.max(0, _selectedRoomIdx - 1);
-                    renderOnlineRoomList();
-                } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
-                    if (_scannedRooms.length > 0) {
-                        _selectedRoomIdx = Math.min(_scannedRooms.length - 1, _selectedRoomIdx + 1);
-                        renderOnlineRoomList();
-                    }
-                } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D' || e.key === 'Enter') {
-                    if (_scannedRooms.length > 0) {
-                        connectToRoom(_scannedRooms[_selectedRoomIdx].roomId);
-                    }
-                } else if (e.key === 'Escape' || e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
-                    _onlinePhase = 'menu';
-                    document.getElementById('mp-status').innerText = '';
-                    document.getElementById('online-rooms-list').style.display = 'none';
-                    updateOnlineSettingsUI();
-                }
                 return true;
             }
             return true;

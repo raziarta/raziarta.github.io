@@ -31,9 +31,9 @@ function resetConfigToDefaults() {
     config.maxBubbleStock = 2;
     config.bubbleSplit = 1;
 
-    // ゲージ残量もデフォルトに戻す
-    G.playerProjectileStock = config.maxProjectileStock;
-    G.playerBubbleStock = config.maxBubbleStock;
+    // ゲージ残量を0から始める（リロードされる挙動にする）
+    G.playerProjectileStock = 0;
+    G.playerBubbleStock = 0;
     if (typeof updateAmmoHUD === 'function') updateAmmoHUD();
 
     // K/D

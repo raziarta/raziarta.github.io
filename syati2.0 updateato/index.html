@@ -126,6 +126,65 @@
         .dg.ac { z-index: 99999 !important; }
         .reward-option:hover { background: rgba(0, 242, 254, 0.05) !important; transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4); border-color: #00f2fe !important; }
         .reward-option:active { transform: translateY(-2px); }
+
+        /* Wipeout-style settings (Corrected Omega Match) */
+        .setting-row {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 5px;
+            width: 100%;
+            align-items: stretch; /* 高さを揃える */
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        .setting-row.focused-tab {
+            opacity: 1;
+        }
+        .setting-label-plate, .setting-value-plate {
+            background: #444;
+            height: 34px;
+            padding: 0 10px;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 720;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+            transition: width 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), background 0.3s, box-shadow 0.3s;
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .setting-row.active .setting-label-plate {
+            background: #0ea5e9 !important;
+        }
+        .setting-row.active .setting-value-plate {
+            background: #0ea5e9 !important;
+            width: 207px !important; /* 横方向のみ広げる (180pxの15%増) */
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+            z-index: 20;
+        }
+        .setting-label-plate {
+            width: 315px; /* flexの代わりに固定幅 */
+            justify-content: space-between;
+            padding-right: 8px; /* 右端に詰める */
+        }
+        .setting-arrow-group {
+            display: flex;
+            gap: 6px; /* 矢印同士の間隔を詰める */
+            margin-left: 10px;
+        }
+        .setting-value-plate {
+            width: 180px; /* flexの代わりに固定幅 */
+            justify-content: flex-start;
+        }
+        .setting-arrow { font-size: 13px; opacity: 0.8; } /* 12%ほど大きく */
+        .setting-arrow.dimmed { opacity: 0.1 !important; }
+        .setting-value { 
+            font-size: 11px;
+            font-weight: 720;
+            text-align: left;
+        }
     </style>
 
     <!-- ライブラリ -->
@@ -236,43 +295,53 @@
             <button id="btn-options"><span>OPTIONS</span></button>
             <button id="btn-records"><span>RECORDS</span></button>
         </div>
-        <div id="main-settings" style="margin-top: 40px; background: rgba(0,0,0,0.05); padding: 15px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1); text-align: left; width: 400px;">
-            <div style="color: #666; font-size: 11px; margin-bottom: 10px; letter-spacing: 2px; font-weight: bold;">MAIN ASCENT SETTINGS</div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; color: #444;">
-                <label>Area Size<br><input type="number" id="cfg-areaSize" value="9" min="5" max="20" step="1" style="width: 60px; background: #fff; color: #333; border: 1px solid #ccc; padding: 3px; border-radius: 4px; text-align: center;"></label>
-                <label>Density<br><input type="number" id="cfg-density" value="0.12" min="0.05" max="0.5" step="0.01" style="width: 60px; background: #fff; color: #333; border: 1px solid #ccc; padding: 3px; border-radius: 4px; text-align: center;"></label>
-                <label>Goal (m)<br><select id="cfg-goalHeight" style="width: 70px; background: #fff; color: #333; border: 1px solid #ccc; padding: 3px; border-radius: 4px;"><option value="50">50</option><option value="100">100</option><option value="150">150</option><option value="200">200</option><option value="250">250</option><option value="300">300</option><option value="350">350</option><option value="400" selected>400</option><option value="450">450</option><option value="500">500</option><option value="600">600</option><option value="800">800</option><option value="1000">1000</option></select></label>
-                <label>Lives<br><input type="number" id="cfg-maxLives" value="3" min="1" max="10" step="1" style="width: 60px; background: #fff; color: #333; border: 1px solid #ccc; padding: 3px; border-radius: 4px; text-align: center;"></label>
-                <label>AI Count<br><input type="number" id="cfg-aiCount" value="0" min="0" max="10" step="1" style="width: 60px; background: #fff; color: #333; border: 1px solid #ccc; padding: 3px; border-radius: 4px; text-align: center;"></label>
+        <div id="main-settings" style="margin-top: 10px; background: transparent; width: 500px;">
+            <div style="color: #666; font-size: 10px; margin-bottom: 12px; letter-spacing: 1.5px; font-weight: 800; border-left: 2px solid #0ea5e9; padding-left: 8px;">MAIN ASCENT SETUP</div>
+            <div id="settings-list">
+                <!-- Setting rows will be injected here -->
             </div>
         </div>
-        <div id="ai-training-ui" style="margin-top: 15px; background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.15); text-align: left; width: 400px; display: none; box-shadow: 0 10px 25px rgba(0,0,0,0.15);">
-            <div style="color: #0ea5e9; font-size: 11px; margin-bottom: 12px; letter-spacing: 2px; font-weight: 800;">NEURAL ASCENT LABORATORY</div>
-            <div style="display:flex; flex-wrap: wrap; gap: 12px; justify-content: flex-start; font-size: 11px; margin-bottom: 15px;">
-                <label style="color:#333; cursor:pointer; font-weight: 600;"><input type="checkbox" id="ai-nn-mode"> NN DRIVE</label>
-                <label style="color:#333; cursor:pointer; font-weight: 600;"><input type="checkbox" id="ai-collect-data"> AUTO-LEARN</label>
-                <label style="color:#333; cursor:pointer; font-weight: 600;"><input type="checkbox" id="ai-follow-player"> TEACHER MODE</label>
+        <div id="ai-training-ui" style="margin-top: 15px; background: transparent; text-align: left; width: 500px; display: none;">
+            <div style="color: #64748b; font-size: 10px; margin-bottom: 12px; letter-spacing: 2px; font-weight: 800; text-transform: uppercase; padding-left: 5px;">SYSTEM & AI OPTIONS</div>
+            <div id="options-list">
+                <!-- Rows injected here -->
             </div>
-            <div id="ai-train-status" style="font-size: 10px; color: #666; margin-bottom: 12px; font-family: monospace; min-height: 1.2em; background: #f1f5f9; padding: 4px 8px; border-radius: 4px;">SYSTEM READY</div>
-            <div style="display:flex; flex-wrap: wrap; gap: 8px; justify-content: flex-start;">
-                <button onclick="trainAIModel()" style="padding: 6px 12px; font-size: 11px; background:#0ea5e9; color:#fff; border:none; cursor:pointer; border-radius:4px; font-weight: bold;">FORCE TRAIN</button>
-                <button onclick="saveAIModelLocally()" style="padding: 6px 12px; font-size: 11px; background:#10b981; color:#fff; border:none; cursor:pointer; border-radius:4px; font-weight: bold;">SAVE BRAIN</button>
-            </div>
+            <div id="ai-train-status" style="font-size: 10px; color: #64748b; margin-top: 12px; font-family: monospace; padding: 4px 8px; font-weight: 500;">SYSTEM READY</div>
+            
+            <!-- Hidden Legacy Inputs for Compatibility -->
+            <input type="range" id="cfg-brightness" style="display:none;" min="0.1" max="2.0" step="0.01" value="0.46">
+            <input type="checkbox" id="ai-nn-mode" style="display:none;">
+            <input type="checkbox" id="ai-collect-data" style="display:none;">
+            <input type="checkbox" id="ai-follow-player" style="display:none;">
         </div>
 
 
-        <div id="multiplayer-ui" style="margin-top: 15px; background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.15); text-align: left; width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.15);">
-            <div style="margin-bottom: 12px;">
-                <label for="player-name-input" style="color: #334155; font-size: 13px; font-weight: bold;">Player Name</label>
-                <input type="text" id="player-name-input" maxlength="10" placeholder="Guest" style="background: #f8fafc; color: #333; border: 1px solid #cbd5e1; padding: 8px; border-radius: 6px; text-align: left; width: 100%; box-sizing: border-box; margin-top: 5px; font-weight: 600;">
+        <div id="multiplayer-ui" style="margin-top: 10px; background: transparent; width: 500px; display: none;">
+            <div style="color: #666; font-size: 10px; margin-bottom: 12px; letter-spacing: 1.5px; font-weight: 800; border-left: 2px solid #0ea5e9; padding-left: 8px;">ONLINE SETUP</div>
+            <div id="online-settings-list">
+                <!-- Online settings will be injected here -->
             </div>
-            <div style="display:flex; gap: 10px; justify-content: flex-start;">
-                <button id="btn-host" style="background: #1e293b; color: #fff; border: none; padding: 10px 20px; cursor: pointer; border-radius: 6px; font-weight: bold; letter-spacing: 0.5px;">HOST ROOM</button>
-                <button id="btn-join" style="background: #0ea5e9; color: #fff; border: none; padding: 10px 20px; cursor: pointer; border-radius: 6px; font-weight: bold; letter-spacing: 0.5px;">JOIN ROOM</button>
+            <div id="online-rooms-list" style="display: none; margin-top: 5px;">
+                <!-- Room list will be injected here -->
             </div>
-            <button id="btn-exit-lobby" style="display:none; margin-top: 10px; background: #dc2626; color: #fff; border: none; padding: 8px 16px; cursor: pointer; border-radius: 6px; font-weight: bold; letter-spacing: 0.5px; font-size: 12px;">EXIT LOBBY</button>
-            <div id="mp-status" style="margin-top: 12px; font-size: 11px; color: #64748b; min-height: 15px; font-weight: 500;"></div>
+            <div style="display:flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                <div id="mp-status" style="font-size: 11px; color: #64748b; font-weight: 500;"></div>
+            </div>
+            <div id="btn-exit-lobby" class="setting-row" style="display:none; margin-top:10px;" onmouseenter="setOnlineMenuIdx(3)">
+                <div class="setting-label-plate" style="width: 500px;">
+                    <span style="color: #ffaaaa;">EXIT LOBBY</span>
+                    <div class="setting-arrow-group">
+                        <span class="setting-arrow">▶</span>
+                    </div>
+                </div>
+            </div>
             <div id="lobby-player-list" style="margin-top: 10px; font-size: 12px; color: #334155; min-height: 15px; display: none;"></div>
+        </div>
+
+        <div id="name-input-overlay" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:rgba(10, 15, 25, 0.95); border:2px solid #0ea5e9; box-shadow: 0 0 30px rgba(14, 165, 233, 0.5); padding:25px; z-index:99999; border-radius: 8px; text-align: center; backdrop-filter: blur(5px);">
+            <div style="color:#0ea5e9; font-size: 12px; font-weight: 800; letter-spacing: 2px; margin-bottom:15px;">ENTER PLAYER NAME</div>
+            <input type="text" id="modal-name-input" maxlength="10" style="background:#1e293b; color:#fff; border:1px solid #334155; padding:8px 12px; width:200px; font-size: 16px; font-weight: bold; text-align: center; border-radius: 4px; outline: none; font-family: monospace;">
+            <div style="font-size: 10px; color: #64748b; margin-top: 15px; letter-spacing: 1px;">PRESS ENTER TO SAVE / ESC TO CANCEL</div>
         </div>
         <div class="menu-footer">
             <div class="footer-line"></div>
@@ -313,6 +382,576 @@
     <script>
         'use strict';
         // ── 起動ロジック ──
+        const settingDefs = [
+            { key: 'areaSize', label: 'AREA SIZE', min: 5, max: 20, step: 1, value: 9 },
+            { key: 'density', label: 'DENSITY', min: 0.03, max: 0.5, step: 0.01, value: 0.16 },
+            { key: 'goalHeight', label: 'GOAL HEIGHT', options: [50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000, 1200, 1300, 1400, 1500], value: 400 },
+            { key: 'maxLives', label: 'MAX LIVES', min: 1, max: 10, step: 1, value: 3 },
+            { key: 'aiCount', label: 'AI COUNT', min: 0, max: 10, step: 1, value: 0 }
+        ];
+        let currentSettingIdx = 0;
+        let isSettingFocused = false; // 設定項目がフォーカスされているか（W/Sで移動中か）
+
+        // ── OPTIONS（AI）設定 ──
+        const optionsDefs = [
+            { key: 'brightness', label: 'BRIGHTNESS', min: 0.1, max: 2.0, step: 0.01, value: 0.46 },
+            { key: 'nnMode', label: 'NN DRIVE', type: 'toggle', value: false },
+            { key: 'autoLearn', label: 'AUTO-LEARN', type: 'toggle', value: false },
+            { key: 'teacherMode', label: 'TEACHER MODE', type: 'toggle', value: false },
+            { key: 'forceTrain', label: 'FORCE TRAIN', type: 'action' },
+            { key: 'saveBrain', label: 'SAVE BRAIN', type: 'action' }
+        ];
+        let currentOptionIdx = 0;
+        let isOptionsFocused = false;
+
+        function saveOptions() {
+            const data = {};
+            optionsDefs.forEach(s => { if (s.type !== 'action') data[s.key] = s.value; });
+            localStorage.setItem('ascent_options', JSON.stringify(data));
+        }
+        function loadOptions() {
+            const saved = localStorage.getItem('ascent_options');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    optionsDefs.forEach(s => {
+                        if (s.type !== 'action' && data[s.key] !== undefined) {
+                            s.value = data[s.key];
+                            syncOptionToGame(s);
+                        }
+                    });
+                } catch(e) { console.error(e); }
+            }
+        }
+
+        // ── ONLINE設定関連 ──
+        let _onlinePhase = 'menu'; // 'menu', 'edit_name', 'scanning', 'select_room'
+        let _currentOnlineMenuIdx = 0; // 0: NAME, 1: HOST, 2: JOIN, 3: EXIT LOBBY (ロビー中のみ)
+        let isOnlineFocused = false;
+        let _scannedRooms = [];
+        let _selectedRoomIdx = 0;
+        const _onlineItems = [
+            { key: 'name', label: 'PLAYER NAME', hasValue: true },
+            { key: 'host', label: 'HOST ROOM', hasValue: false },
+            { key: 'join', label: 'JOIN ROOM', hasValue: false }
+        ];
+
+        // グローバル公開: マウスホバー・クリック用
+        window.setOnlineMenuIdx = function(idx) {
+            _currentOnlineMenuIdx = idx;
+            isOnlineFocused = true;
+            updateOnlineSettingsUI();
+        };
+        window.setSettingIdx = function(idx) {
+            currentSettingIdx = idx;
+            isSettingFocused = true;
+            updateSettingsUI();
+        };
+        window.setOptionIdx = function(idx) {
+            currentOptionIdx = idx;
+            isOptionsFocused = true;
+            updateOptionsUI();
+        };
+        window.clickOnlineMenu = function() {
+            executeOnlineAction();
+        };
+        window.clickOptionAction = function() {
+            executeOptionAction();
+        };
+
+        // 初回のみHTML構造を生成する
+        function initOnlineSettingsUI() {
+            const container = document.getElementById('online-settings-list');
+            if (!container) return;
+            container.innerHTML = _onlineItems.map((s, idx) => {
+                const valHtml = s.hasValue ? `
+                    <div id="online-value-${idx}" class="setting-value-plate">
+                        <span class="setting-value"></span>
+                    </div>` : '';
+                return `
+                    <div id="online-row-${idx}" class="setting-row" 
+                         onmouseenter="setOnlineMenuIdx(${idx})" 
+                         onclick="clickOnlineMenu()"
+                         style="cursor: pointer;">
+                        <div class="setting-label-plate" style="width: ${s.hasValue ? '315px' : '500px'};">
+                            <span>${s.label}</span>
+                            <div class="setting-arrow-group">
+                                <span class="setting-arrow" onclick="event.stopPropagation(); clickOnlineMenu()">▶</span>
+                            </div>
+                        </div>
+                        ${valHtml}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 状態（クラスや値）のみを更新する（アニメーションを有効にするため）
+        function updateOnlineSettingsUI() {
+            const isTabActive = (currentMenuIdx === 2);
+            const exitRow = document.getElementById('btn-exit-lobby');
+            const maxIdx = (exitRow && exitRow.style.display !== 'none') ? 3 : 2;
+
+            _onlineItems.forEach((s, idx) => {
+                const row = document.getElementById(`online-row-${idx}`);
+                if (!row) return;
+
+                const isActive = isOnlineFocused && isTabActive && idx === _currentOnlineMenuIdx;
+
+                if (isActive) row.classList.add('active');
+                else row.classList.remove('active');
+
+                if (isTabActive) row.classList.add('focused-tab');
+                else row.classList.remove('focused-tab');
+
+                // 値の更新 (PLAYER NAMEのみ)
+                if (s.hasValue) {
+                    const valPlate = document.getElementById(`online-value-${idx}`);
+                    if (valPlate) {
+                        const valEl = valPlate.querySelector('.setting-value');
+                        if (valEl) valEl.innerText = G.myPlayerName;
+                    }
+                }
+            });
+
+            // EXIT LOBBY行のハイライト
+            if (exitRow && exitRow.style.display !== 'none') {
+                const isExitActive = isOnlineFocused && isTabActive && _currentOnlineMenuIdx === 3;
+                if (isExitActive) { exitRow.classList.add('active'); exitRow.classList.add('focused-tab'); }
+                else { exitRow.classList.remove('active'); exitRow.classList.remove('focused-tab'); }
+            }
+        }
+
+        // ── OPTIONS（AI）UI ──
+        function initOptionsUI() {
+            const container = document.getElementById('options-list');
+            if (!container) return;
+            container.innerHTML = optionsDefs.map((s, idx) => {
+                const isAction = s.type === 'action';
+                const valHtml = !isAction ? `
+                    <div id="option-value-${idx}" class="setting-value-plate">
+                        <span class="setting-value"></span>
+                    </div>` : '';
+                return `
+                    <div id="option-row-${idx}" class="setting-row" onmouseenter="setOptionIdx(${idx})" onclick="clickOptionAction()" style="cursor: pointer;">
+                        <div class="setting-label-plate" style="width: ${isAction ? '500px' : '315px'};">
+                            <span>${s.label}</span>
+                            <div class="setting-arrow-group">
+                                ${!isAction ? '<span class="setting-arrow left-arrow" onclick="event.stopPropagation(); changeOptionValue(-1)">◀</span>' : ''}
+                                <span class="setting-arrow right-arrow" onclick="event.stopPropagation(); ${isAction ? 'clickOptionAction()' : 'changeOptionValue(1)'}">▶</span>
+                            </div>
+                        </div>
+                        ${valHtml}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateOptionsUI() {
+            const isTabActive = (currentMenuIdx === 3);
+            optionsDefs.forEach((s, idx) => {
+                const row = document.getElementById(`option-row-${idx}`);
+                if (!row) return;
+
+                const isActive = isOptionsFocused && isTabActive && idx === currentOptionIdx;
+                if (isActive) row.classList.add('active');
+                else row.classList.remove('active');
+
+                if (isTabActive) row.classList.add('focused-tab');
+                else row.classList.remove('focused-tab');
+
+                if (s.type !== 'action') {
+                    const valEl = row.querySelector('.setting-value');
+                    if (valEl) {
+                        if (s.type === 'toggle') valEl.innerText = s.value ? 'ON' : 'OFF';
+                        else valEl.innerText = s.value.toFixed(2);
+                    }
+                    // 矢印の暗転
+                    let leftDim = false, rightDim = false;
+                    if (s.type === 'toggle') {
+                        if (s.value === false) leftDim = true;
+                        if (s.value === true) rightDim = true;
+                    } else {
+                        if (s.value <= s.min) leftDim = true;
+                        if (s.value >= s.max) rightDim = true;
+                    }
+                    const lArrow = row.querySelector('.left-arrow');
+                    const rArrow = row.querySelector('.right-arrow');
+                    if (lArrow) lArrow.className = `setting-arrow left-arrow ${leftDim ? 'dimmed' : ''}`;
+                    if (rArrow) rArrow.className = `setting-arrow right-arrow ${rightDim ? 'dimmed' : ''}`;
+                }
+            });
+        }
+
+        function changeOptionValue(dir) {
+            const s = optionsDefs[currentOptionIdx];
+            if (s.type === 'toggle') {
+                if (dir === 1) s.value = true;
+                else if (dir === -1) s.value = false;
+            } else if (s.type !== 'action') {
+                s.value = Math.max(s.min, Math.min(s.max, s.value + dir * s.step));
+            }
+            updateOptionsUI();
+            syncOptionToGame(s);
+            saveOptions();
+        }
+
+        function executeOptionAction() {
+            const s = optionsDefs[currentOptionIdx];
+            if (s.key === 'forceTrain') trainAIModel();
+            else if (s.key === 'saveBrain') saveAIModelLocally();
+            else if (s.type === 'toggle') changeOptionValue(1);
+        }
+
+        function syncOptionToGame(s) {
+            if (s.key === 'brightness') {
+                config.brightness = s.value;
+                if (G.renderer) G.renderer.toneMappingExposure = s.value;
+                const legacyInp = document.getElementById('cfg-brightness');
+                if (legacyInp) legacyInp.value = s.value;
+            } else if (s.key === 'nnMode') {
+                const legacyInp = document.getElementById('ai-nn-mode');
+                if (legacyInp) legacyInp.checked = s.value;
+                // ai_core.js側の変数があれば同期（なければinput経由で動くはず）
+            } else if (s.key === 'autoLearn') {
+                const legacyInp = document.getElementById('ai-collect-data');
+                if (legacyInp) legacyInp.checked = s.value;
+            } else if (s.key === 'teacherMode') {
+                const legacyInp = document.getElementById('ai-follow-player');
+                if (legacyInp) legacyInp.checked = s.value;
+            }
+        }
+
+        window.handleOptionsKey = function(e) {
+            if (!isOptionsFocused) {
+                if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') return false;
+                if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') return false;
+                if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') return false;
+                if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D' || e.key === 'Enter') return false;
+            }
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+                if (currentOptionIdx === 0) {
+                    isOptionsFocused = false;
+                    updateOptionsUI();
+                    return false;
+                }
+                currentOptionIdx--;
+                updateOptionsUI();
+                return true;
+            } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+                currentOptionIdx = Math.min(optionsDefs.length - 1, currentOptionIdx + 1);
+                updateOptionsUI();
+                return true;
+            } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                changeOptionValue(-1);
+                return true;
+            } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D' || e.key === 'Enter') {
+                const s = optionsDefs[currentOptionIdx];
+                if (s.type === 'action') executeOptionAction();
+                else changeOptionValue(1);
+                return true;
+            }
+            return false;
+        };
+
+        // 名前入力モーダルの表示
+        function openNameModal() {
+            const overlay = document.getElementById('name-input-overlay');
+            const input = document.getElementById('modal-name-input');
+            if (!overlay || !input) return;
+            _onlinePhase = 'edit_name';
+            input.value = G.myPlayerName;
+            overlay.style.display = 'block';
+            input.focus();
+            input.select();
+        }
+
+        function closeNameModal(save) {
+            const overlay = document.getElementById('name-input-overlay');
+            const input = document.getElementById('modal-name-input');
+            if (!overlay || !input) return;
+            if (save) {
+                const val = input.value.trim();
+                G.myPlayerName = val || 'Guest';
+            }
+            overlay.style.display = 'none';
+            _onlinePhase = 'menu';
+            updateOnlineSettingsUI();
+        }
+
+        // モーダル入力のキーハンドラ
+        document.addEventListener('DOMContentLoaded', () => {
+            const modalInput = document.getElementById('modal-name-input');
+            if (modalInput) {
+                modalInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); closeNameModal(true); }
+                    else if (e.key === 'Escape') { e.preventDefault(); closeNameModal(false); }
+                    e.stopPropagation(); // メインのキーハンドラへ伝播しない
+                });
+            }
+        });
+
+        // 選択中の項目を実行
+        function executeOnlineAction() {
+            if (_onlinePhase !== 'menu') return;
+            if (_currentOnlineMenuIdx === 0) {
+                openNameModal();
+            } else if (_currentOnlineMenuIdx === 1) {
+                if (G.isOnline || G.peer) {
+                    document.getElementById('mp-status').innerText = 'ALREADY IN A ROOM';
+                    return;
+                }
+                setupHost();
+            } else if (_currentOnlineMenuIdx === 2) {
+                if (G.isOnline || G.peer) {
+                    document.getElementById('mp-status').innerText = 'ALREADY IN A ROOM';
+                    return;
+                }
+                startRoomScan();
+            } else if (_currentOnlineMenuIdx === 3) {
+                // EXIT LOBBY — dispatchEventで既存のaddEventListenerを発動
+                const exitBtn = document.getElementById('btn-exit-lobby');
+                if (exitBtn) {
+                    exitBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+                }
+            }
+        }
+
+        // ルームスキャン（ルーム一覧は online-rooms-list に描画）
+        function startRoomScan() {
+            _onlinePhase = 'scanning';
+            document.getElementById('mp-status').innerText = 'SCANNING ROOMS...';
+            _scannedRooms = [];
+            
+            const scanPromises = [];
+            for (let i = 1; i <= 10; i++) {
+                scanPromises.push(new Promise(resolve => {
+                    const tempPeer = new Peer();
+                    const testConn = tempPeer.connect('ascent-room-' + i, { reliable: true });
+                    let answered = false;
+                    
+                    testConn.on('open', () => {
+                        testConn.send({ type: 'ping' });
+                    });
+                    
+                    testConn.on('data', (data) => {
+                        if (data && data.type === 'pong' && !answered) {
+                            answered = true;
+                            _scannedRooms.push({ roomId: i, hostName: data.hostName || 'Unknown' });
+                            testConn.close();
+                            tempPeer.destroy();
+                            resolve();
+                        }
+                    });
+                    
+                    setTimeout(() => {
+                        if (!answered) {
+                            answered = true;
+                            if (testConn) testConn.close();
+                            if (tempPeer) tempPeer.destroy();
+                            resolve();
+                        }
+                    }, 2000);
+                }));
+            }
+            
+            Promise.all(scanPromises).then(() => {
+                _onlinePhase = 'select_room';
+                _selectedRoomIdx = 0;
+                document.getElementById('mp-status').innerText = `FOUND ${_scannedRooms.length} ROOM(S)`;
+                renderOnlineRoomList();
+            });
+        }
+
+        // ルーム一覧は動的生成（数が可変のためinnerHTML方式）
+        function renderOnlineRoomList() {
+            const container = document.getElementById('online-rooms-list');
+            if (!container) return;
+            
+            if (_onlinePhase !== 'select_room') {
+                container.style.display = 'none';
+                return;
+            }
+            container.style.display = 'block';
+            
+            if (_scannedRooms.length === 0) {
+                container.innerHTML = `
+                    <div style="font-size: 11px; font-weight: bold; color: #fff; margin-bottom: 8px;">▸ SELECT ROOM [▲▼ / ▶ JOIN]</div>
+                    <div class="setting-row"><div class="setting-label-plate" style="width: 500px; background: #333;"><span style="color: #aaa;">NO ROOMS FOUND</span></div></div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div style="font-size: 11px; font-weight: bold; color: #fff; margin-bottom: 8px;">▸ SELECT ROOM [▲▼ / ▶ JOIN]</div>
+                ` + _scannedRooms.map((room, idx) => {
+                    const isActive = (idx === _selectedRoomIdx);
+                    return `
+                        <div class="setting-row ${isActive ? 'active focused-tab' : ''}" 
+                             onmouseenter="setRoomIdx(${idx})" onclick="joinSelectedRoom()"
+                             style="margin-bottom: 2px; cursor: pointer;">
+                            <div class="setting-label-plate" style="width: 500px; ${isActive ? 'background: #0ea5e9 !important;' : 'background: #444;'}">
+                                <span>ROOM ${room.roomId} · ${room.hostName}</span>
+                                <div class="setting-arrow-group">
+                                    <span class="setting-arrow" style="${isActive ? '' : 'opacity:0;'}">▶ JOIN</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        window.setRoomIdx = function(idx) {
+            _selectedRoomIdx = idx;
+            renderOnlineRoomList();
+        };
+        window.joinSelectedRoom = function() {
+            if (_scannedRooms.length > 0) {
+                connectToRoom(_scannedRooms[_selectedRoomIdx].roomId);
+            }
+        };
+
+        function connectToRoom(roomId) {
+            document.getElementById('mp-status').innerText = `CONNECTING TO ROOM ${roomId}...`;
+            document.getElementById('online-rooms-list').style.display = 'none';
+            setupClient(roomId);
+        }
+
+        window.handleOnlineKey = function(e) {
+            const exitRow = document.getElementById('btn-exit-lobby');
+            const maxIdx = (exitRow && exitRow.style.display !== 'none') ? 3 : 2;
+
+            if (_onlinePhase === 'menu') {
+                if (!isOnlineFocused) {
+                    if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') return false; // メインリスナーに任せてフォーカスさせる
+                    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') return false;
+                    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') return false;
+                    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D' || e.key === 'Enter') return false;
+                }
+
+                if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+                    if (_currentOnlineMenuIdx === 0) {
+                        isOnlineFocused = false;
+                        updateOnlineSettingsUI();
+                        return false; // タブ選択に戻る
+                    }
+                    _currentOnlineMenuIdx = Math.max(0, _currentOnlineMenuIdx - 1);
+                    updateOnlineSettingsUI();
+                    return true;
+                } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+                    const exitRow = document.getElementById('btn-exit-lobby');
+                    const maxIdx = (exitRow && exitRow.style.display !== 'none') ? 3 : 2;
+                    _currentOnlineMenuIdx = Math.min(maxIdx, _currentOnlineMenuIdx + 1);
+                    updateOnlineSettingsUI();
+                    return true;
+                } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D' || e.key === 'Enter') {
+                    executeOnlineAction();
+                    return true;
+                } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                    return false; // Not handled, fallback to tab switch
+                }
+            } else if (_onlinePhase === 'edit_name') {
+                // モーダルがフォーカスを持っているので、ここには来ない
+                return true;
+            } else if (_onlinePhase === 'select_room') {
+                if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+                    _selectedRoomIdx = Math.max(0, _selectedRoomIdx - 1);
+                    renderOnlineRoomList();
+                } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+                    if (_scannedRooms.length > 0) {
+                        _selectedRoomIdx = Math.min(_scannedRooms.length - 1, _selectedRoomIdx + 1);
+                        renderOnlineRoomList();
+                    }
+                } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D' || e.key === 'Enter') {
+                    if (_scannedRooms.length > 0) {
+                        connectToRoom(_scannedRooms[_selectedRoomIdx].roomId);
+                    }
+                } else if (e.key === 'Escape' || e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                    _onlinePhase = 'menu';
+                    document.getElementById('mp-status').innerText = '';
+                    document.getElementById('online-rooms-list').style.display = 'none';
+                    updateOnlineSettingsUI();
+                }
+                return true;
+            }
+            return true;
+        }
+
+        // 初回のみHTML構造を生成する
+        function initSettingsUI() {
+            const container = document.getElementById('settings-list');
+            if (!container) return;
+            container.innerHTML = settingDefs.map((s, idx) => `
+                <div id="setting-row-${idx}" class="setting-row" onmouseenter="setSettingIdx(${idx})" style="cursor: pointer;">
+                    <div class="setting-label-plate">
+                        <span>${s.label}</span>
+                        <div class="setting-arrow-group">
+                            <span class="setting-arrow left-arrow" onclick="event.stopPropagation(); changeSettingValue(-1)">◀</span>
+                            <span class="setting-arrow right-arrow" onclick="event.stopPropagation(); changeSettingValue(1)">▶</span>
+                        </div>
+                    </div>
+                    <div class="setting-value-plate">
+                        <span class="setting-value"></span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 状態（クラスや値）のみを更新する（アニメーションを有効にするため）
+        function updateSettingsUI() {
+            const isTabActive = (currentMenuIdx === 1);
+            
+            settingDefs.forEach((s, idx) => {
+                const row = document.getElementById(`setting-row-${idx}`);
+                if (!row) return;
+
+                const isActive = isSettingFocused && isTabActive && idx === currentSettingIdx;
+                
+                // クラスの更新（これによりCSS transitionが発動する）
+                if (isActive) row.classList.add('active');
+                else row.classList.remove('active');
+
+                if (isTabActive) row.classList.add('focused-tab');
+                else row.classList.remove('focused-tab');
+
+                // 値の更新
+                const valEl = row.querySelector('.setting-value');
+                if (valEl) valEl.innerText = s.options ? s.value : s.value.toFixed(s.step < 1 ? 2 : 0);
+
+                // 矢印の暗転
+                let leftDim = false, rightDim = false;
+                if (s.options) {
+                    const cIdx = s.options.indexOf(s.value);
+                    if (cIdx === 0) leftDim = true;
+                    if (cIdx === s.options.length - 1) rightDim = true;
+                } else {
+                    if (s.value <= s.min) leftDim = true;
+                    if (s.value >= s.max) rightDim = true;
+                }
+                const lArrow = row.querySelector('.left-arrow');
+                const rArrow = row.querySelector('.right-arrow');
+                if (lArrow) lArrow.className = `setting-arrow left-arrow ${leftDim ? 'dimmed' : ''}`;
+                if (rArrow) rArrow.className = `setting-arrow right-arrow ${rightDim ? 'dimmed' : ''}`;
+            });
+        }
+
+        function changeSettingValue(dir) {
+            const s = settingDefs[currentSettingIdx];
+            if (s.options) {
+                let curIdx = s.options.indexOf(s.value);
+                // 一周しないようにクランプ（ dir: -1 または 1 ）
+                curIdx = Math.max(0, Math.min(s.options.length - 1, curIdx + dir));
+                s.value = s.options[curIdx];
+            } else {
+                s.value = Math.max(s.min, Math.min(s.max, s.value + dir * s.step));
+            }
+            updateSettingsUI();
+            // configへ同期
+            if (s.key === 'areaSize') config.areaSize = s.value;
+            if (s.key === 'density') config.density = s.value;
+            if (s.key === 'goalHeight') config.goalHeight = s.value;
+            if (s.key === 'maxLives') config.maxLives = s.value;
+            if (s.key === 'aiCount') config.aiCount = s.value;
+        }
+
         // アセットの初期化
         initAssets();
         // Workerの初期化
@@ -324,6 +963,9 @@
             const inp = document.getElementById('player-name-input');
             if (inp) inp.value = G.myPlayerName;
             if (window.startMenuOcean) window.startMenuOcean();
+            updateMenuVisual(); // 起動時にパネルの表示状態を同期
+            updateSettingsUI();
+            updateOnlineSettingsUI();
         });
 
         // Tutorial ボタン
@@ -332,10 +974,10 @@
             if (G.isClientInLobby) { logStatus('ホストのゲーム開始を待っています…'); return; }
             if (G.isOnline && !G.isHost) { logStatus('ホストのゲーム開始を待っています…'); return; }
             if (!G.isStarted) {
-                const aiInp = document.getElementById('cfg-aiCount');
-                const aiVal = parseInt(aiInp ? aiInp.value : 0);
-                config.aiCount = (aiVal > 0) ? aiVal : false;
-                config.maxLives = parseInt(document.getElementById('cfg-maxLives').value) || 3;
+                // 設定値の同期
+                settingDefs.forEach(s => { config[s.key] = s.value; });
+                config.aiCount = (config.aiCount > 0) ? config.aiCount : false;
+                
                 if (G.isOnline && G.isHost) broadcastEvent(6, { seed: G.randomSeed, mode: 'tutorial', aiCount: config.aiCount, maxLives: config.maxLives });
                 else if (!G.isOnline) G.randomSeed = Math.random();
                 if (window.stopMenuOcean) window.stopMenuOcean();
@@ -355,13 +997,11 @@
             if (!G.isStarted) {
                 if (G.isClientInLobby) { logStatus('ホストのゲーム開始を待っています…'); return; }
                 if (G.isOnline && !G.isHost) { logStatus('ホストのゲーム開始を待っています…'); return; }
-                config.areaSize = parseInt(document.getElementById('cfg-areaSize').value) || 9;
-                config.density = parseFloat(document.getElementById('cfg-density').value) || 0.16;
-                config.goalHeight = parseInt(document.getElementById('cfg-goalHeight').value) || 400;
-                config.maxLives = parseInt(document.getElementById('cfg-maxLives').value) || 3;
-                const aiInp = document.getElementById('cfg-aiCount');
-                const val = parseInt(aiInp ? aiInp.value : 0);
-                config.aiCount = (val > 0) ? val : false;
+                
+                // 設定値の同期
+                settingDefs.forEach(s => { config[s.key] = s.value; });
+                config.aiCount = (config.aiCount > 0) ? config.aiCount : false;
+
                 if (G.isOnline && G.isHost) {
                     const activeCount = G.connections.filter(c => c.open).length;
                     if (activeCount < G.peerNames.size - 1) {
@@ -381,30 +1021,49 @@
             if (G.controls) G.controls.lock();
         });
 
-        // マルチプレイボタン
-        document.getElementById('btn-host').addEventListener('click', (e) => {
-            e.stopPropagation();
-            G.myPlayerName = document.getElementById('player-name-input').value.trim() || ASCENT_NAMES[Math.floor(Math.random() * ASCENT_NAMES.length)];
-            setupHost();
-        });
-        document.getElementById('btn-join').addEventListener('click', (e) => {
-            e.stopPropagation();
-            G.myPlayerName = document.getElementById('player-name-input').value.trim() || ASCENT_NAMES[Math.floor(Math.random() * ASCENT_NAMES.length)];
-            if (window.stopMenuOcean) window.stopMenuOcean();
-            setupClient();
-        });
+        // マルチプレイボタン（旧UIのリスナー、null-safe化）
+        const btnHost = document.getElementById('btn-host');
+        if (btnHost) {
+            btnHost.addEventListener('click', (e) => {
+                e.stopPropagation();
+                G.myPlayerName = document.getElementById('player-name-input').value.trim() || ASCENT_NAMES[Math.floor(Math.random() * ASCENT_NAMES.length)];
+                setupHost();
+            });
+        }
+        const btnJoin = document.getElementById('btn-join');
+        if (btnJoin) {
+            btnJoin.addEventListener('click', (e) => {
+                e.stopPropagation();
+                G.myPlayerName = document.getElementById('player-name-input').value.trim() || ASCENT_NAMES[Math.floor(Math.random() * ASCENT_NAMES.length)];
+                if (window.stopMenuOcean) window.stopMenuOcean();
+                setupClient();
+            });
+        }
 
-        // ロビーでのリアルタイム名前変更
-        document.getElementById('player-name-input').addEventListener('input', (e) => {
-            const newName = e.target.value.trim();
-            if (newName && G.isOnline) {
-                G.myPlayerName = newName;
-                if (typeof broadcastEvent === 'function') {
-                    broadcastEvent(5, { id: G.myPeerId, name: G.myPlayerName });
+        // ロビーでのリアルタイム名前変更（旧UIのリスナー、null-safe化）
+        const playerNameInput = document.getElementById('player-name-input');
+        if (playerNameInput) {
+            playerNameInput.addEventListener('input', (e) => {
+                const newName = e.target.value.trim();
+                if (newName && G.isOnline) {
+                    G.myPlayerName = newName;
+                    if (typeof broadcastEvent === 'function') {
+                        broadcastEvent(5, { id: G.myPeerId, name: G.myPlayerName });
+                    }
+                    if (G.isHost && typeof updateLobbyPlayerList === 'function') {
+                        updateLobbyPlayerList();
+                    }
                 }
-                if (G.isHost && typeof updateLobbyPlayerList === 'function') {
-                    updateLobbyPlayerList();
-                }
+            });
+        }
+
+        // 明るさ調整の同期
+        document.getElementById('cfg-brightness').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            config.brightness = val;
+            document.getElementById('brightness-val').innerText = val.toFixed(2);
+            if (G.renderer) {
+                G.renderer.toneMappingExposure = val;
             }
         });
 
@@ -482,8 +1141,17 @@
             const aiSettings = document.getElementById('ai-training-ui');
             
             if (mainSettings) mainSettings.style.display = (currentMenuIdx === 1) ? 'block' : 'none';
-            if (multiplayerUi) multiplayerUi.style.display = (currentMenuIdx === 2) ? 'block' : 'none';
-            if (aiSettings) aiSettings.style.display = (currentMenuIdx === 3) ? 'block' : 'none';
+            if (multiplayerUi) {
+                multiplayerUi.style.display = (currentMenuIdx === 2) ? 'block' : 'none';
+                if (currentMenuIdx === 2) {
+                    if (_onlinePhase !== 'select_room' && _onlinePhase !== 'edit_name') _onlinePhase = 'menu';
+                    updateOnlineSettingsUI();
+                }
+            }
+            if (aiSettings) {
+                aiSettings.style.display = (currentMenuIdx === 3) ? 'block' : 'none';
+                if (currentMenuIdx === 3) updateOptionsUI();
+            }
         }
 
         // マウスクリックでタブを切り替える
@@ -491,7 +1159,13 @@
             btn.addEventListener('click', () => {
                 if (btn.disabled) return;
                 currentMenuIdx = idx;
+                isSettingFocused = false;
+                isOnlineFocused = false;
+                isOptionsFocused = false;
                 updateMenuVisual();
+                updateSettingsUI();
+                updateOnlineSettingsUI();
+                updateOptionsUI();
             });
         });
 
@@ -506,12 +1180,68 @@
                 return;
             }
 
+            // オンラインタブが表示されている場合
+            if (currentMenuIdx === 2) {
+                if (window.handleOnlineKey && window.handleOnlineKey(e)) return;
+            }
+            // オプションタブが表示されている場合
+            if (currentMenuIdx === 3) {
+                if (window.handleOptionsKey && window.handleOptionsKey(e)) return;
+            }
+
             if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
-                currentMenuIdx = (currentMenuIdx - 1 + menuButtons.length) % menuButtons.length;
-                updateMenuVisual();
+                if (isSettingFocused) {
+                    changeSettingValue(-1);
+                } else {
+                    currentMenuIdx = (currentMenuIdx - 1 + menuButtons.length) % menuButtons.length;
+                    updateMenuVisual();
+                    updateSettingsUI();
+                }
             } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
-                currentMenuIdx = (currentMenuIdx + 1) % menuButtons.length;
-                updateMenuVisual();
+                if (isSettingFocused) {
+                    changeSettingValue(1);
+                } else {
+                    currentMenuIdx = (currentMenuIdx + 1) % menuButtons.length;
+                    updateMenuVisual();
+                    updateSettingsUI();
+                }
+            } else if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+                if (isSettingFocused) {
+                    if (currentSettingIdx === 0) {
+                        isSettingFocused = false; // 一番上からさらに上でメニューへ
+                    } else {
+                        currentSettingIdx--;
+                    }
+                    updateSettingsUI();
+                }
+            } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+                if (currentMenuIdx === 1) {
+                    if (!isSettingFocused) {
+                        isSettingFocused = true;
+                        currentSettingIdx = 0;
+                    } else {
+                        currentSettingIdx = Math.min(settingDefs.length - 1, currentSettingIdx + 1);
+                    }
+                    updateSettingsUI();
+                } else if (currentMenuIdx === 2) {
+                    if (!isOnlineFocused) {
+                        isOnlineFocused = true;
+                        _currentOnlineMenuIdx = 0;
+                    } else {
+                        const exitRow = document.getElementById('btn-exit-lobby');
+                        const maxIdx = (exitRow && exitRow.style.display !== 'none') ? 3 : 2;
+                        _currentOnlineMenuIdx = Math.min(maxIdx, _currentOnlineMenuIdx + 1);
+                    }
+                    updateOnlineSettingsUI();
+                } else if (currentMenuIdx === 3) {
+                    if (!isOptionsFocused) {
+                        isOptionsFocused = true;
+                        currentOptionIdx = 0;
+                    } else {
+                        currentOptionIdx = Math.min(optionsDefs.length - 1, currentOptionIdx + 1);
+                    }
+                    updateOptionsUI();
+                }
             } else if (e.key === 'Enter' || e.key === ' ') {
                 const btn = menuButtons[currentMenuIdx];
                 if (btn && !btn.disabled) btn.click();
@@ -520,6 +1250,13 @@
 
         // 初期実行
         updateMenuVisual();
+        initSettingsUI();
+        updateSettingsUI();
+        initOnlineSettingsUI();
+        updateOnlineSettingsUI();
+        initOptionsUI();
+        loadOptions();
+        updateOptionsUI();
     </script>
 </body>
 </html>

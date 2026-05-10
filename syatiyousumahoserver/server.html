@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ascent — Server Host</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #fff;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            color: #1e293b;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 16px;
+            min-height: 100vh;
+        }
+        h1 {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            color: #0f172a;
+        }
+        .subtitle {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 32px;
+        }
+        .btn {
+            width: 100%;
+            max-width: 400px;
+            height: 64px;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-bottom: 16px;
+            transition: transform 0.1s, box-shadow 0.2s;
+        }
+        .btn:active {
+            transform: scale(0.97);
+        }
+        .btn-host {
+            background: #0ea5e9;
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(14,165,233,0.3);
+        }
+        .btn-host:hover {
+            background: #0284c7;
+        }
+        .btn-host:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .btn-exit {
+            background: #ef4444;
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(239,68,68,0.3);
+            display: none;
+        }
+        .btn-exit:hover {
+            background: #dc2626;
+        }
+        #server-status {
+            width: 100%;
+            max-width: 400px;
+            min-height: 40px;
+            padding: 12px 16px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #334155;
+            text-align: center;
+            margin-bottom: 16px;
+            word-break: break-all;
+        }
+        #player-list {
+            width: 100%;
+            max-width: 400px;
+            padding: 16px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 2;
+            display: none;
+        }
+        #player-list .header {
+            font-size: 12px;
+            font-weight: 800;
+            color: #64748b;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>ASCENT SERVER</h1>
+    <p class="subtitle">Lightweight host — no game rendering</p>
+
+    <button id="btn-host" class="btn btn-host" onclick="hostRoom()">HOST ROOM</button>
+    <button id="btn-exit" class="btn btn-exit" onclick="exitLobby()">EXIT LOBBY</button>
+
+    <div id="server-status">Ready</div>
+    <div id="player-list"></div>
+
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script>
+        'use strict';
+
+        const ROOM_PREFIX = "raziarta-ascent-room-";
+        const PEER_OPTIONS = {
+            debug: 1,
+            secure: true,
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'turn:relay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+                    { urls: 'turn:relay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+                    { urls: 'turn:relay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+                ]
+            }
+        };
+
+        let peer = null;
+        let isOnline = false;
+        let connections = [];
+        let peerNames = new Map();
+        let myPeerId = null;
+        const hostName = "Server";
+        let randomSeed = Math.random();
+
+        function log(msg) {
+            document.getElementById('server-status').innerText = msg;
+        }
+
+        function updatePlayerList() {
+            const el = document.getElementById('player-list');
+            if (!el) return;
+            const names = [];
+            names.push(`<span style="color:#0ea5e9;font-weight:bold">★ ${hostName} (HOST)</span>`);
+            peerNames.forEach((name) => {
+                names.push(`<span style="color:#334155">● ${name}</span>`);
+            });
+            connections.forEach(c => {
+                if (!peerNames.has(c.peer)) {
+                    names.push(`<span style="color:#94a3b8">● Connecting...</span>`);
+                }
+            });
+            el.innerHTML = `<div class="header">▸ PLAYERS IN LOBBY</div>` + names.join('<br>');
+            el.style.display = 'block';
+        }
+
+        function hostRoom() {
+            if (isOnline || peer) {
+                log('Already hosting.');
+                return;
+            }
+            log('Creating room...');
+            document.getElementById('btn-host').disabled = true;
+            let attempt = 1;
+
+            function tryBind() {
+                if (attempt > 10) {
+                    log('Failed to create room (all slots taken).');
+                    document.getElementById('btn-host').disabled = false;
+                    return;
+                }
+                const tryId = ROOM_PREFIX + attempt;
+                peer = new Peer(tryId, PEER_OPTIONS);
+
+                peer.on('open', (id) => {
+                    myPeerId = id;
+                    isOnline = true;
+                    randomSeed = Math.random();
+                    log(`Room Hosted! (Room ${attempt})`);
+                    document.getElementById('btn-exit').style.display = 'block';
+                    updatePlayerList();
+                });
+
+                peer.on('error', (err) => {
+                    if (err.type === 'unavailable-id') {
+                        attempt++;
+                        peer.destroy();
+                        tryBind();
+                    } else {
+                        log('PeerJS Error: ' + err.type);
+                    }
+                });
+
+                peer.on('disconnected', () => { peer.reconnect(); });
+                peer.on('close', () => { isOnline = false; });
+
+                peer.on('connection', (conn) => {
+                    connections.push(conn);
+                    conn.on('open', () => {
+                        // Send handshake
+                        conn.send({ event: 0, seed: randomSeed, hostId: myPeerId, hostName: hostName });
+                        // Send existing player names
+                        peerNames.forEach((name, id) => {
+                            if (id !== myPeerId) conn.send({ event: 5, id: id, name: name });
+                        });
+                        updatePlayerList();
+                    });
+                    conn.on('data', (data) => {
+                        if (data && data.event === 5) {
+                            peerNames.set(data.id, data.name);
+                            // Broadcast to others
+                            connections.forEach(c => {
+                                if (c.open) c.send(data);
+                            });
+                            updatePlayerList();
+                        }
+                    });
+                    conn.on('close', () => {
+                        peerNames.delete(conn.peer);
+                        connections = connections.filter(c => c !== conn);
+                        updatePlayerList();
+                    });
+                });
+            }
+            tryBind();
+        }
+
+        function exitLobby() {
+            // Notify clients
+            connections.forEach(c => {
+                if (c.open) c.send({ event: 22 });
+            });
+            connections.forEach(c => c.close());
+            connections = [];
+            peerNames.clear();
+            if (peer) { peer.destroy(); peer = null; }
+            isOnline = false;
+            myPeerId = null;
+            log('Lobby closed.');
+            document.getElementById('btn-exit').style.display = 'none';
+            document.getElementById('btn-host').disabled = false;
+            document.getElementById('player-list').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

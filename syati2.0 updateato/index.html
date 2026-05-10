@@ -16,8 +16,10 @@
         #home-button { position: absolute; top: 110px; left: 30px; padding: 8px 16px; background: rgba(30,41,59,0.8); color: white; font-size: 14px; font-weight: bold; font-family: 'Courier New', monospace; cursor: pointer; border: 1px solid rgba(100,180,255,0.2); border-radius: 4px; pointer-events: auto; transition: 0.2s; }
         #home-button:hover { background: rgba(51,65,85,0.9); border-color: #64b4ff; }
         #entity-list { position: absolute; top: 30px; left: 30px; font-size: 13px; font-weight: 600; color: #94a3b8; line-height: 1.6; text-shadow: 0 0 5px #000; }
-        #crosshair { width: 4px; height: 4px; border-radius: 50%; background: rgba(100,240,255,0.9); box-shadow: 0 0 8px rgba(0,242,254,0.6); }
-        #crosshair-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) translateX(-20px); display: flex; align-items: center; gap: 12px; pointer-events: none; }
+        #crosshair-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); pointer-events: none; width: 0; height: 0; }
+        #crosshair { position: absolute; top: -2px; left: -2px; width: 4px; height: 4px; border-radius: 50%; background: rgba(100,240,255,0.9); box-shadow: 0 0 8px rgba(0,242,254,0.6); }
+        #gauge-shot-group { position: absolute; top: -3.5px; right: 12px; display: flex; gap: 4px; align-items: center; justify-content: flex-end; }
+        #gauge-bubble-group { position: absolute; top: -3.5px; left: 12px; display: flex; gap: 4px; align-items: center; justify-content: flex-start; }
         .ammo-gauge-group { display: flex; gap: 4px; align-items: center; }
         .ammo-segment { width: 25px; height: 7px; background: rgba(0,0,0,0.4); border-radius: 1px; overflow: hidden; border: 1px solid rgba(100,180,255,0.15); }
         .ammo-segment-inner { height: 100%; width: 0%; transition: width 0.1s; }
@@ -234,11 +236,11 @@
             <div id="gauge-shot-group" class="ammo-gauge-group">
                 <div class="ammo-segment"><div id="shot-seg-0" class="ammo-segment-inner shot-inner"></div></div>
                 <div class="ammo-segment"><div id="shot-seg-1" class="ammo-segment-inner shot-inner"></div></div>
-                <div class="ammo-segment"><div id="shot-seg-2" class="ammo-segment-inner shot-inner"></div></div>
             </div>
             <div id="crosshair"></div>
             <div id="gauge-bubble-group" class="ammo-gauge-group">
-                <div class="ammo-segment" style="width: 45px;"><div id="bubble-seg" class="ammo-segment-inner bubble-inner"></div></div>
+                <div class="ammo-segment" style="width: 45px;"><div id="bubble-seg-0" class="ammo-segment-inner bubble-inner"></div></div>
+                <div class="ammo-segment" style="width: 45px;"><div id="bubble-seg-1" class="ammo-segment-inner bubble-inner"></div></div>
             </div>
         </div>
         <div id="air-indicator" class="hidden">・ AIR JUMP READY</div>
@@ -395,6 +397,7 @@
         // ── OPTIONS（AI）設定 ──
         const optionsDefs = [
             { key: 'brightness', label: 'BRIGHTNESS', min: 0.1, max: 2.0, step: 0.01, value: 0.46 },
+            { key: 'deathFall', label: 'DEATH FALL', type: 'select', options: ['none', '25', '50'], labels: ['OFF', '25m', '50m'], value: '50' },
             { key: 'nnMode', label: 'NN DRIVE', type: 'toggle', value: false },
             { key: 'autoLearn', label: 'AUTO-LEARN', type: 'toggle', value: false },
             { key: 'teacherMode', label: 'TEACHER MODE', type: 'toggle', value: false },
@@ -578,13 +581,20 @@
                     const valEl = row.querySelector('.setting-value');
                     if (valEl) {
                         if (s.type === 'toggle') valEl.innerText = s.value ? 'ON' : 'OFF';
-                        else valEl.innerText = s.value.toFixed(2);
+                        else if (s.type === 'select') {
+                            const idx = s.options.indexOf(s.value);
+                            valEl.innerText = s.labels[idx] || s.value;
+                        } else valEl.innerText = s.value.toFixed(2);
                     }
                     // 矢印の暗転
                     let leftDim = false, rightDim = false;
                     if (s.type === 'toggle') {
                         if (s.value === false) leftDim = true;
                         if (s.value === true) rightDim = true;
+                    } else if (s.type === 'select') {
+                        const idx = s.options.indexOf(s.value);
+                        if (idx <= 0) leftDim = true;
+                        if (idx >= s.options.length - 1) rightDim = true;
                     } else {
                         if (s.value <= s.min) leftDim = true;
                         if (s.value >= s.max) rightDim = true;
@@ -602,6 +612,10 @@
             if (s.type === 'toggle') {
                 if (dir === 1) s.value = true;
                 else if (dir === -1) s.value = false;
+            } else if (s.type === 'select') {
+                const idx = s.options.indexOf(s.value);
+                const newIdx = Math.max(0, Math.min(s.options.length - 1, idx + dir));
+                s.value = s.options[newIdx];
             } else if (s.type !== 'action') {
                 s.value = Math.max(s.min, Math.min(s.max, s.value + dir * s.step));
             }
@@ -623,10 +637,11 @@
                 if (G.renderer) G.renderer.toneMappingExposure = s.value;
                 const legacyInp = document.getElementById('cfg-brightness');
                 if (legacyInp) legacyInp.value = s.value;
+            } else if (s.key === 'deathFall') {
+                config.deathFallMode = s.value;
             } else if (s.key === 'nnMode') {
                 const legacyInp = document.getElementById('ai-nn-mode');
                 if (legacyInp) legacyInp.checked = s.value;
-                // ai_core.js側の変数があれば同期（なければinput経由で動くはず）
             } else if (s.key === 'autoLearn') {
                 const legacyInp = document.getElementById('ai-collect-data');
                 if (legacyInp) legacyInp.checked = s.value;

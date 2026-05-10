@@ -511,6 +511,6 @@
   "relicChips": [
     { "relicId": "photo_frame", "x": 9500, "y": 510 }
   ],
-  "spawnX": -604,
+  "spawnX": 200,
   "spawnY": 555
 }

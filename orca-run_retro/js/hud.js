@@ -1,6 +1,8 @@
 // === HUD.JS - HP, Inventory, Reload UI, Damage Popups, Subtitles ===
 const HUD = {
   damagePopups: [],
+  hudMessage: '',
+  hudMessageTimer: 0,
 
   draw(ctx, player, boss, midBoss, score, subtitle, subtitleTimer) {
     // HP Bar
@@ -74,6 +76,27 @@ const HUD = {
       ctx.textAlign = 'left';
       ctx.restore();
     }
+
+    // === Temporary HUD Message (centered) ===
+    if (this.hudMessageTimer > 0) {
+      this.hudMessageTimer--;
+      const alpha = this.hudMessageTimer > 100 ? (120 - this.hudMessageTimer) / 20
+                  : this.hudMessageTimer < 20 ? this.hudMessageTimer / 20 : 1;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = '#fff';
+      ctx.font = '24px "DotGothic16"';
+      ctx.textAlign = 'center';
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.shadowBlur = 4;
+      ctx.fillText(this.hudMessage, Game.width / 2, Game.height / 2 + 60);
+      ctx.restore();
+    }
+  },
+  
+  showMessage(msg, duration = 120) {
+    this.hudMessage = msg;
+    this.hudMessageTimer = duration;
   },
 
   _hpBar(ctx, x, y, w, h, cur, max, color, label) {

@@ -3,7 +3,7 @@
   "number": "ステージ7",
   "chapter": 3,
   "chapterTitle": "第3章　彼方の試練",
-  "length": 21700,
+  "length": 40000,
   "bgPhase": 6,
   "hasPitfalls": true,
   "scrollSpeed": 2.8,
@@ -509,6 +509,6 @@
   "relicChips": [
     { "relicId": "satellite_piece", "x": 8000, "y": 350 }
   ],
-  "spawnX": -668,
+  "spawnX": 200,
   "spawnY": 602
 }

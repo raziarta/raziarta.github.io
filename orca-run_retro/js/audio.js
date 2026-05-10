@@ -203,24 +203,16 @@ const AudioManager = {
     this.bgmPlaying='leviathan';
   },
 
-   // === Title BGM - Atmospheric & Epic Opening ===
+  // === Title BGM - Atmospheric & Epic Opening ===
   startTitleBGM() {
     if(!this.initialized || this.bgmPlaying === 'title') return;
     this.stopAll();
     Tone.Transport.bpm.value = 110;
     
-    // 既に楽器が生成済みの場合は、再生だけ開始して終了
-    if (this.titleParts) {
-      this.titleParts.loops.forEach(l => l.start(0));
-      Tone.Transport.start();
-      this.bgmPlaying = 'title';
-      return;
-    }
-
-    // --- 初回実行時のみ楽器を生成 ---
     const rev = new Tone.Reverb({decay:8, wet:0.5}).toDestination();
     const dly = new Tone.FeedbackDelay({delayTime:'4n.', feedback:0.4, wet:0.3}).connect(rev);
     
+    // Shoegaze pad
     const tPad = new Tone.PolySynth(Tone.Synth, {
       oscillator: { type: 'sine4' },
       envelope: { attack: 4, decay: 3, sustain: 0.6, release: 5 },
@@ -231,6 +223,7 @@ const AudioManager = {
       try { tPad.triggerAttackRelease(chords[i], '4m', t, 0.4); } catch(e) {}
     }, [0,1,2,3], '4m');
 
+    // Crystal lead
     const tLead = new Tone.Synth({
       oscillator: { type: 'sine' },
       envelope: { attack: 0.8, decay: 2, sustain: 0.2, release: 3 },
@@ -241,6 +234,7 @@ const AudioManager = {
       try { if(n) tLead.triggerAttackRelease(n, '2n', t, 0.35); } catch(e) {}
     }, mel, '1n');
 
+    // Steady heartbeat bass
     const tBass = new Tone.MonoSynth({
       oscillator: { type: 'sine' },
       envelope: { attack: 0.1, decay: 0.5, sustain: 0.8, release: 1 },
@@ -258,11 +252,9 @@ const AudioManager = {
     console.log("Start Title BGM");
   },
 
-
-    stopAll() {
+  stopAll() {
     try {
       Tone.Transport.stop();
-      // 全てのBGMパートをリスト化して一括停止
       const partsList = [
         this.roadParts, this.tutorialParts, this.bossParts, this.abyssParts, 
         this.lastBossParts, this.skyParts, this.oceanParts, this.coreParts, 
@@ -273,7 +265,6 @@ const AudioManager = {
         if (p.loops) p.loops.forEach(l => l.stop());
         if (p.noise) p.noise.stop();
         if (p.synths) {
-          // 鳴り続けているシンセサイザーの音（リリース）を強制停止
           p.synths.forEach(s => {
             if (s.releaseAll) s.releaseAll();
             else if (s.triggerRelease) s.triggerRelease();
@@ -286,9 +277,43 @@ const AudioManager = {
       console.warn("StopAll Error:", e);
     }
   },
+  setPauseFilter(isPaused){if(!this.initialized||!this.lpf)return;if(isPaused)this.lpf.frequency.rampTo(800,0.2);else this.lpf.frequency.rampTo(20000,0.2);},
 
+  // Environmental SE for Opening
+  playAirCut() {
+    if (!this.initialized) return;
+    try {
+      const noise = new Tone.Noise({ type: 'white', volume: -15 }).toDestination();
+      const filter = new Tone.Filter(8000, 'bandpass').toDestination();
+      noise.connect(filter);
+      noise.start();
+      noise.stop('+0.15');
+      filter.frequency.rampTo(2000, 0.15);
+      setTimeout(() => { noise.dispose(); filter.dispose(); }, 300);
+    } catch(e) {}
+  },
 
-  // Environmental SE
+  startWindLoop() {
+    if (!this.initialized) return;
+    try {
+      if (this.windLoop) return;
+      this.windLoop = new Tone.Noise({ type: 'pink', volume: -25 });
+      this.windFilter = new Tone.Filter(400, 'lowpass').toDestination();
+      this.windLoop.connect(this.windFilter);
+      this.windLoop.start();
+      // Removed setInterval to prevent conflicting rampTo calls that cause 'internal list is malformed' errors
+    } catch(e) {}
+  },
+
+  stopWindLoop() {
+    if (this.windLoop) {
+      this.windLoop.stop();
+      this.windLoop.dispose();
+      this.windLoop = null;
+    }
+    if (this.windInterval) clearInterval(this.windInterval);
+  },
+
   playWindGust() {
     if (!this.initialized) return;
     try {
@@ -298,6 +323,7 @@ const AudioManager = {
       noise.start();
       noise.stop('+1.5');
       filter.frequency.rampTo(200, 1.5);
+      setTimeout(() => { noise.dispose(); filter.dispose(); }, 2000);
     } catch(e) {}
   },
 
@@ -310,6 +336,7 @@ const AudioManager = {
         volume: -12
       }).toDestination();
       rumble.triggerAttackRelease('C1', '1.5');
+      setTimeout(() => rumble.dispose(), 2000);
     } catch(e) {}
   },
 };

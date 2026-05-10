@@ -37,7 +37,10 @@ class Player {
     this.jumpTimer = 0;
     this.isBoosting = false;
     this.lastWDown = false;
+    this.lastQDown = false;
     this.evolved = false; // Weapon evolution flag (set after Stage 1 clear)
+    this.qMode = false;
+    this.qModeUnlocked = localStorage.getItem('orcaRunQModeUnlocked') === 'true';
   }
 
   update(keys, mouseL, mouseR, platforms, camX, screenW, screenH) {
@@ -75,18 +78,34 @@ class Player {
       
       if (keys['ArrowLeft']||keys['a']) { 
         this.vx = -curSpeed; 
-        if (this.onGround) this.facing = -1; 
+        if (this.onGround || (this.qMode && !this.onGround)) this.facing = -1; 
       }
       if (keys['ArrowRight']||keys['d']) { 
         this.vx = curSpeed; 
-        if (this.onGround) this.facing = 1; 
+        if (this.onGround || (this.qMode && !this.onGround)) this.facing = 1; 
       }
     }
 
     // Input processing
     const isWDown = keys['w'] || keys['W'] || keys['Shift'] || keys[' '] || keys['Spacebar'] || keys['Space'];
+    const isQDown = keys['q'] || keys['Q'];
     const jumpJustPressed = isWDown && !this.lastWDown;
+    const qJustPressed = isQDown && !this.lastQDown;
+    
     this.lastWDown = isWDown;
+    this.lastQDown = isQDown;
+
+    // Q key toggles Qmode if unlocked, otherwise reverses direction
+    if (qJustPressed) {
+      if (this.qModeUnlocked) {
+        this.qMode = !this.qMode;
+        if (typeof HUD !== 'undefined') {
+          HUD.showMessage(this.qMode ? 'Qmode' : 'Qmode OFF');
+        }
+      } else {
+        this.facing = this.facing === 1 ? -1 : 1;
+      }
+    }
 
     if (jumpJustPressed && !this.crouching) {
       if (this.onGround) {
@@ -143,7 +162,7 @@ class Player {
     const worldX = this.x + camX;
     const isDeepDiveZone = currentStage && (
       (currentStage.number === "STAGE 3" && worldX > 11800) ||
-      (currentStage.number === "STAGE 7" && worldX > 14000)
+      (currentStage.number === "STAGE 7" && (worldX > 14000 || (typeof Game !== 'undefined' && Game.score >= 14000)))
     );
     
     if (!hasPitfalls) {
@@ -238,8 +257,9 @@ class Player {
     this.invincible=false;this.knockback=false;this.crouching=false;
     this.shotCooldown=0;this.bombCooldown=0;this.frame=0;this.facing=1;
     this.canDoubleJump=true;this.hh=this.standHH;
-    this.isBoosting=false;this.jumpTimer=0;this.lastWDown=false;
+    this.isBoosting=false;this.jumpTimer=0;this.lastWDown=false;this.lastQDown=false;
     this.evolved=false;
+    this.qMode=false;
     this.lastGroundY = this.y;
   }
 }

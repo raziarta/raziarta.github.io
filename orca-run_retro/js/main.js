@@ -11,6 +11,8 @@ const Game = {
   state:'LOADING', keys:{}, mouseL:false, mouseR:false,
   player:null, boss:null, score:0, totalFrames:0, paused:false, hitStopFrames:0,
   fadeAlpha:0, fadeState:'none', fadeTimer:0, storyText:'',
+  retryFullHeal: true,
+  announcementQueue: [],
   abyssParticles: [],
   debugMultiplier: 1,
   debugPanelVisible: false,
@@ -22,6 +24,8 @@ const Game = {
     this.ctx=this.canvas.getContext('2d');
     this.resize();
     this.ctx.imageSmoothingEnabled=false;
+
+    if (typeof Opening !== 'undefined') Opening.init();
 
     // Pause screen interactions
     const returnMapBtn = document.getElementById('btn-return-map');
@@ -56,10 +60,29 @@ const Game = {
         document.getElementById('loading-bar').style.width = pct + '%';
         document.getElementById('loading-text').textContent = `${loaded} / ${total} Assets`;
       });
-      // Loading complete
-      this.state = 'TITLE';
-      document.getElementById('loading-screen').classList.add('hidden');
-      document.getElementById('title-screen').classList.remove('hidden');
+      // Loading complete - Wait for first click to start Opening
+      this.state = 'LOADING_COMPLETE';
+      document.getElementById('loading-bar').style.width = '100%';
+      document.getElementById('loading-text').textContent = "COMPLETE";
+      document.getElementById('loading-text').classList.add('blink');
+      const loadingScreen = document.getElementById('loading-screen');
+      if (loadingScreen) {
+        const prompt = loadingScreen.querySelector('.start-prompt');
+        if (prompt) prompt.textContent = "CLICK TO START OPENING";
+      }
+
+      const startOpening = () => {
+        if (this.state !== 'LOADING_COMPLETE') return;
+        this.state = 'OPENING';
+        document.getElementById('loading-screen').classList.add('hidden');
+        if (typeof Opening !== 'undefined') Opening.start();
+        
+        window.removeEventListener('mousedown', startOpening);
+        window.removeEventListener('keydown', startOpening);
+      };
+      window.addEventListener('mousedown', startOpening);
+      window.addEventListener('keydown', startOpening);
+      
       this._updateTitleButtons();
       
       // Fix BGM auto-play: Start on first interaction
@@ -89,6 +112,29 @@ const Game = {
           if (this.state === 'PLAYING' || this.state === 'MIDBOSS' || this.state === 'BOSS') {
             this.togglePause();
           }
+        }
+        // DEBUG: UNLOCK ALL (4)
+        if(e.key === '4') {
+          console.log("DEBUG: Unlocking everything...");
+          localStorage.setItem('orcaRunCleared', JSON.stringify([1,2,3,4,5,6,7,8,9]));
+          const allRelicIds = Relics.entries.map(r => r.id);
+          localStorage.setItem('orcaRunRelics', JSON.stringify(allRelicIds));
+          this._updateTitleButtons();
+          if (this.state === 'WORLD_MAP') WorldMap.init(); // Refresh map
+          alert("All Stages, Bestiary, and Relics UNLOCKED.\nPlease reload or go back to title to see all changes.");
+        }
+        // DEBUG: RESET ALL (5)
+        if(e.key === '5') {
+          console.log("DEBUG: Resetting progress...");
+          localStorage.setItem('orcaRunCleared', JSON.stringify([]));
+          localStorage.setItem('orcaRunRelics', JSON.stringify([]));
+          this._updateTitleButtons();
+          if (this.state === 'WORLD_MAP') {
+            WorldMap.currentMap = 1;
+            WorldMap.selectedNode = 1;
+            WorldMap.init();
+          }
+          alert("Progress RESET.\nPlease reload or go back to title.");
         }
         // DEBUG SPEED TOGGLE
         if(e.key === '9') {
@@ -168,7 +214,34 @@ const Game = {
         StageEditor.init();
         StageEditor.open();
       });
-      document.getElementById('gameover-screen').addEventListener('click',()=>{if(this.state==='GAMEOVER')this.resetToTitle();});
+      // Game Over Screen Buttons
+      const btnRetry = document.getElementById('btn-retry');
+      if (btnRetry) {
+        btnRetry.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (this.state === 'GAMEOVER') {
+            document.getElementById('gameover-screen').classList.add('hidden');
+            this.startLevel(LevelManager.currentStage); // Restart current stage
+          }
+        });
+      }
+      const btnWorldGo = document.getElementById('btn-world-go');
+      if (btnWorldGo) {
+        btnWorldGo.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (this.state === 'GAMEOVER') {
+            document.getElementById('gameover-screen').classList.add('hidden');
+            this.state = 'WORLD_MAP';
+            WorldMap.active = true;
+            WorldMap.moving = false;
+            if(typeof AudioManager !== 'undefined') {
+              AudioManager.stopAll();
+              if (WorldMap.currentMap === 1) AudioManager.startRoadBGM();
+              else AudioManager.startAbyssBGM();
+            }
+          }
+        });
+      }
       
       const pauseScreen = document.getElementById('pause-screen');
       pauseScreen.addEventListener('click', (e) => {
@@ -270,7 +343,35 @@ const Game = {
   async startLevel(index) {
     this.state='STAGE_INTRO';this.score=0;this.totalFrames=0;this.boss=null;
     this.tutorialStep=0;this.tutorialCompleteDelay=0;
+    
+    // Calculate HP ratio before reset
+    const ratio = this.player.hp / this.player.maxHp;
+    const prevMaxHp = this.player.maxHp;
+
+    // Dynamic HP: Stage 7-9 = 150, others = 100
+    if (index >= 7) {
+      this.player.maxHp = 150;
+    } else {
+      this.player.maxHp = 100;
+    }
+
     this.player.reset(true); // Keep stats
+    
+    // HP recovery logic
+    if (this.retryFullHeal) {
+      this.player.hp = this.player.maxHp;
+    } else {
+      // Scale HP based on ratio (e.g. Stage 7 (150) HP 100 -> Stage 6 (100) HP 66)
+      this.player.hp = Math.floor(ratio * this.player.maxHp);
+      // Safety: if it was > 0, keep at least 1 HP
+      if (ratio > 0 && this.player.hp < 1) this.player.hp = 1;
+    }
+    
+    // Always heal to full if maxHp increased (special chapter boost)
+    if (this.player.maxHp > prevMaxHp) {
+      this.player.hp = this.player.maxHp;
+    }
+
     // Evolve weapons from Stage 4 (index 4) onwards
     this.player.evolved = (index >= 4);
     EnemyManager.clear();ProjectileManager.clear();
@@ -393,14 +494,25 @@ const Game = {
       yesBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         document.getElementById('chapter3-dialog').classList.add('hidden');
-        document.getElementById('title-screen').classList.add('hidden');
-        this.startLevel(7);
+        if (this.ch3DialogYesCallback) {
+          this.ch3DialogYesCallback();
+        } else {
+          // Default behavior (e.g. from Title screen)
+          document.getElementById('title-screen').classList.add('hidden');
+          this.state = 'WORLD_MAP';
+          WorldMap.active = true;
+          WorldMap.moving = false;
+          WorldMap._switchMap(3, true); // Go directly to Map 3
+        }
       });
     }
     if (noBtn) {
       noBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         document.getElementById('chapter3-dialog').classList.add('hidden');
+        if (this.ch3DialogNoCallback) {
+          this.ch3DialogNoCallback();
+        }
       });
     }
   },
@@ -491,7 +603,17 @@ const Game = {
 
   update(){
     if(this.state==='LOADING')return;
+    if(this.state==='LOADING_COMPLETE')return;
+
+    // Check for pending announcements
+    if (this.announcementQueue.length > 0 && 
+        document.getElementById('announcement-dialog').classList.contains('hidden') &&
+        (this.state === 'WORLD_MAP' || this.state === 'STAGE_INTRO' || this.state === 'TITLE')) {
+      this.showAnnouncement();
+    }
+
     if(this.state==='TITLE')return;
+    if(this.state==='OPENING'){Opening.update();return;}
     if(this.state==='ENDING'){Ending.update();return;}
     if(this.state==='GAMEOVER')return;
     if(this.state==='BESTIARY')return;
@@ -538,6 +660,8 @@ const Game = {
         if(res.triggerMidBoss){
           EnemyManager.spawnMidBoss(res.triggerMidBoss);
           this.state='MIDBOSS';
+          LevelManager.currentSubtitle = null;
+          LevelManager.subtitleTimer = 0;
         }
         // Boss trigger
         if(res.triggerBoss){
@@ -576,7 +700,8 @@ const Game = {
 
         // Normal enemy update
         EnemyManager.update(LevelManager.scrollSpeed,this.player,HUD.damagePopups);
-        if (LevelManager.isStageComplete() && !EnemyManager.midBoss && !this.boss && this.fadeState === 'none') {
+        const isStage7ScoreClear = (LevelManager.currentStage === 7 && this.score >= 14000);
+        if ((LevelManager.isStageComplete() || isStage7ScoreClear) && !EnemyManager.midBoss && !this.boss && this.fadeState === 'none') {
           if (this.isEditorTest) {
             this.resetToTitle();
             return;
@@ -706,6 +831,10 @@ const Game = {
 
   startBoss(){
     this.state='BOSS';EnemyManager.enabled=false;EnemyManager.enemies=[];
+    if (typeof LevelManager !== 'undefined') {
+      LevelManager.currentSubtitle = null;
+      LevelManager.subtitleTimer = 0;
+    }
     // Chapter 2 final boss = NullBoss, Chapter 1 (Stage 1-3) = Leviathan
     if (LevelManager.currentStage > 3) {
       this.boss = new NullBoss();
@@ -727,12 +856,15 @@ const Game = {
   _startFadeTransition() {
     this.fadeState = 'out';
     this.fadeTimer = 0;
-    // Evolve weapons and heal when clearing stage 3
+    // Evolve weapons when clearing stage 3
     if (LevelManager.currentStage === 3) {
       this.player.evolved = true;
-      this.player.hp = this.player.maxHp;
-      if (typeof HUD !== 'undefined' && HUD.damagePopups) {
-        HUD.damagePopups.push({x: this.player.x - 20, y: this.player.y - 50, dmg: 'FULL HEAL', timer: 120, maxTimer: 120, color: '#33ff33'});
+      const cleared = JSON.parse(localStorage.getItem('orcaRunCleared') || '[]');
+      if (!cleared.includes(3)) {
+        this.player.hp = this.player.maxHp;
+        if (typeof HUD !== 'undefined' && HUD.damagePopups) {
+          HUD.damagePopups.push({x: this.player.x - 20, y: this.player.y - 50, dmg: 'FULL HEAL', timer: 120, maxTimer: 120, color: '#33ff33'});
+        }
       }
     }
     // Save cleared stage
@@ -755,18 +887,64 @@ const Game = {
 
   _markStageCleared(stageIdx) {
     const cleared = JSON.parse(localStorage.getItem('orcaRunCleared') || '[]');
-    if (!cleared.includes(stageIdx)) {
+    const isFirstClear = !cleared.includes(stageIdx);
+    if (isFirstClear) {
       cleared.push(stageIdx);
       localStorage.setItem('orcaRunCleared', JSON.stringify(cleared));
+      
+      // Queuing announcements for first clears
+      if (stageIdx === 3) {
+        this.announcementQueue.push({ 
+          title: "シャチ第二形態　が解放されました", 
+          desc: "ペンギン弾 damage 1→2\nペンギン爆弾 damege 2→4" 
+        });
+        this.announcementQueue.push({ 
+          title: "ワールドマップ2:深淵　が解放されました", 
+          desc: "" 
+        });
+      } else if (stageIdx === 6) {
+        localStorage.setItem('orcaRunQModeUnlocked', 'true');
+        this.player.qModeUnlocked = true;
+        this.announcementQueue.push({ 
+          title: "Qmode が解放されました", 
+          desc: "Qmode:Qボタンを押すことで、ジャンプ中に A or D キーで方向転換が可能になります" 
+        });
+      }
+    }
+    
+    // Normal clear = carry over HP
+    this.retryFullHeal = false;
+    
+    // Special: First clear of Stage 3 (Leviathan) or Stage 6 (Null) = Full Heal
+    if (isFirstClear && (stageIdx === 3 || stageIdx === 6)) {
+      this.retryFullHeal = true;
     }
   },
 
   victory(){this.state='ENDING';Ending.start(this.score,this.totalFrames);},
   gameOver(){
     this.state='GAMEOVER';
+    this.retryFullHeal = true;
     document.getElementById('final-score').textContent=`SCORE: ${this.score}`;
     document.getElementById('gameover-screen').classList.remove('hidden');
     AudioManager.stopAll();
+  },
+  
+  showAnnouncement() {
+    if (this.announcementQueue.length === 0) return;
+    const data = this.announcementQueue[0];
+    document.getElementById('announcement-title').textContent = data.title;
+    document.getElementById('announcement-desc').textContent = data.desc;
+    document.getElementById('announcement-dialog').classList.remove('hidden');
+    if (typeof AudioManager !== 'undefined') AudioManager.playSE('select');
+  },
+  
+  closeAnnouncement() {
+    document.getElementById('announcement-dialog').classList.add('hidden');
+    this.announcementQueue.shift();
+    if (this.announcementQueue.length > 0) {
+      setTimeout(() => this.showAnnouncement(), 100);
+    }
   },
 
   draw(){
@@ -774,6 +952,8 @@ const Game = {
     ctx.fillStyle='#06060c';ctx.fillRect(0,0,this.width,this.height);
 
     if(this.state==='LOADING'){return;}
+    if(this.state==='LOADING_COMPLETE'){return;}
+    if(this.state==='OPENING'){Opening.draw();return;}
 
     // Even on title screen, draw background moving
     if(this.state==='TITLE'){return;}

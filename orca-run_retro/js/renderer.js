@@ -341,6 +341,82 @@ const Renderer = {
     ctx.restore();
   },
 
+  // --- Chapter 3 Procedural Enemies ---
+  drawCloudPuffer(ctx, x, y, scale, frame) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0, 0, 15*scale, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ff9999'; ctx.beginPath(); ctx.arc(8*scale, -5*scale, 3*scale, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  },
+  drawAeroGlider(ctx, x, y, scale, frame) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.fillStyle = '#5588ff'; ctx.beginPath(); ctx.moveTo(-20*scale, 0); ctx.lineTo(20*scale, 0); ctx.lineTo(0, -10*scale); ctx.fill();
+    ctx.restore();
+  },
+  drawStaticSpark(ctx, x, y, scale, frame) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 2*scale;
+    for(let i=0; i<4; i++) {
+      const ang = (frame*0.1 + i*Math.PI/2);
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(ang)*15*scale, Math.sin(ang)*15*scale); ctx.stroke();
+    }
+    ctx.restore();
+  },
+  drawStormEagle(ctx, x, y, scale, frame) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.fillStyle = '#333344'; ctx.beginPath(); ctx.ellipse(0, 0, 30*scale, 15*scale, 0, 0, Math.PI*2); ctx.fill();
+    const wingY = Math.sin(frame*0.2)*20*scale;
+    ctx.fillStyle = '#555566';
+    ctx.beginPath(); ctx.moveTo(-30*scale, 0); ctx.lineTo(-60*scale, wingY); ctx.lineTo(-30*scale, 10*scale); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(30*scale, 0); ctx.lineTo(60*scale, wingY); ctx.lineTo(30*scale, 10*scale); ctx.fill();
+    ctx.restore();
+  },
+  drawNeonJelly(ctx, x, y, scale, frame) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.fillStyle = `hsla(${(frame*2)%360}, 80%, 60%, 0.6)`;
+    ctx.beginPath(); ctx.arc(0, 0, 12*scale, Math.PI, 0); ctx.fill();
+    ctx.restore();
+  },
+  drawRustySeeker(ctx, x, y, scale, frame) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.fillStyle = '#884422'; ctx.fillRect(-8*scale, -8*scale, 16*scale, 16*scale);
+    ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.arc(0,0, 3*scale, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  },
+  drawBubbleSniper(ctx, x, y, scale, frame) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.fillStyle = '#4488aa'; ctx.fillRect(-10*scale, -10*scale, 20*scale, 20*scale);
+    ctx.strokeStyle = '#88ccff'; ctx.strokeRect(-12*scale, -12*scale, 24*scale, 24*scale);
+    ctx.restore();
+  },
+  drawKrakenX(ctx, x, y, scale, frame) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.fillStyle = '#110022'; ctx.beginPath(); ctx.arc(0, 0, 40*scale, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  },
+  drawMagmaCrawler(ctx, x, y, scale, frame) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.fillStyle = '#ff4400'; ctx.fillRect(-15*scale, -5*scale, 30*scale, 10*scale);
+    ctx.restore();
+  },
+  drawHeatFlicker(ctx, x, y, scale, frame) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.globalAlpha = 0.5 + Math.sin(frame*0.2)*0.3;
+    ctx.fillStyle = '#ffaa44'; ctx.beginPath(); ctx.arc(0, 0, 10*scale, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  },
+  drawCoreShard(ctx, x, y, scale, frame) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.rotate(frame*0.05);
+    ctx.fillStyle = '#ffcc00'; ctx.fillRect(-10*scale, -10*scale, 20*scale, 20*scale);
+    ctx.restore();
+  },
+  drawVulcan(ctx, x, y, scale, frame) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.fillStyle = '#440000'; ctx.beginPath(); ctx.arc(0, 0, 60*scale, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  },
+
   drawItem(ctx, x, y, scale, type, frame) {
     ctx.save(); ctx.translate(x, y + Math.sin(frame*0.1)*3*scale);
     let img;
@@ -382,25 +458,53 @@ const Renderer = {
 
   drawGround(ctx, width, height, groundY, camX, phase = 0) {
     const h = height - groundY;
+    
+    // Default / Base values
+    let baseColor = '#1a1e2a';
+    let topColor = '#3a4a6a';
+    let subColor = '#2a3a5a';
+    let crackColor = '#141824';
+    
+    if (phase === 0) {
+      // Stage 1: River/Grass
+      baseColor = '#1a3a2a'; topColor = '#2a5a3a'; subColor = '#1a4a2a'; crackColor = '#102a1a';
+    } else if (phase === 1) {
+      // Stage 2: Plant-covered alley (Asphalt + Moss)
+      baseColor = '#2d2d30'; topColor = '#4a5a4a'; subColor = '#3a4a3a'; crackColor = '#1a1a1a';
+    } else if (phase === 2) {
+      // Stage 3: Crater/Rugged ground
+      baseColor = '#3a3a4a'; topColor = '#5a5a6a'; subColor = '#4a4a5a'; crackColor = '#2a2a3a';
+    } else if (phase === 3) {
+      // Stage 4: Collapsed Underground City
+      baseColor = '#1f2024'; topColor = '#3a3c44'; subColor = '#2a2c34'; crackColor = '#101014';
+    } else if (phase === 4) {
+      // Stage 5: Aberration Habitat
+      baseColor = '#2a0a1a'; topColor = '#4a1a2a'; subColor = '#3a1020'; crackColor = '#1a0510';
+    } else if (phase === 6) {
+      // Stage 7: Volcano
+      baseColor = '#1a1010'; topColor = '#3a2020'; subColor = '#2a1515'; crackColor = '#ff3300';
+    } else if (phase === 7) {
+      // Stage 8: Sky
+      baseColor = '#e0f0ff'; topColor = '#ffffff'; subColor = '#f0f8ff'; crackColor = '#c0d0f0';
+    } else if (phase === 8) {
+      // Stage 9: Origin / Core
+      baseColor = '#ffffff'; topColor = '#eeeeee'; subColor = '#dddddd'; crackColor = '#ffccff';
+    }
 
     if (phase === 5) {
-      // Stage 6 Depth Floor
+      // Phase 5 (Stage 6) Void Grid Logic
       ctx.fillStyle = '#010103';
       ctx.fillRect(0, groundY, width, h);
-      
-      // Top edge to indicate collision
-      ctx.fillStyle = '#111522';
-      ctx.fillRect(0, groundY, width, 4);
-      ctx.fillStyle = '#0a0d15';
-      ctx.fillRect(0, groundY + 4, width, 2);
+      ctx.fillStyle = '#111522'; ctx.fillRect(0, groundY, width, 4);
+      ctx.fillStyle = '#0a0d15'; ctx.fillRect(0, groundY + 4, width, 2);
 
-      // Perspective grid
       ctx.save();
       ctx.strokeStyle = 'rgba(30, 40, 70, 0.5)';
+      if (typeof Backgrounds !== 'undefined' && Backgrounds.USE_NEW_LORE_BGS) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; // Monochrome for new lore
+      }
       ctx.lineWidth = 2;
       const centerX = width / 2;
-      const vanishingY = groundY - 150;
-      
       ctx.beginPath();
       for (let i = -10; i <= 10; i++) {
         const floorX = centerX + i * 150 - ((camX * 0.8) % 150);
@@ -408,40 +512,70 @@ const Renderer = {
         ctx.lineTo(floorX, height);
       }
       ctx.stroke();
-
       for (let j = 0; j < 6; j++) {
         const yOffset = Math.pow(j, 1.8) * 6;
         const y = groundY + yOffset;
         if (y > height) break;
-        const alpha = 0.5 * (1 - j / 6);
-        ctx.strokeStyle = `rgba(40, 60, 100, ${alpha})`;
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(width, y);
-        ctx.stroke();
+        ctx.strokeStyle = (typeof Backgrounds !== 'undefined' && Backgrounds.USE_NEW_LORE_BGS) 
+          ? `rgba(255, 255, 255, ${0.5 * (1 - j/6)})` 
+          : `rgba(40, 60, 100, ${0.5 * (1 - j / 6)})`;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
       }
       ctx.restore();
       return;
     }
 
-    // Normal ground for other phases
-    ctx.fillStyle = '#1a1e2a';
+    // Normal ground rendering using selected colors
+    ctx.fillStyle = baseColor;
     ctx.fillRect(0, groundY, width, h);
 
-    // Top highlight line
-    ctx.fillStyle = '#3a4a6a';
+    ctx.fillStyle = topColor;
     ctx.fillRect(0, groundY, width, 4);
-    ctx.fillStyle = '#2a3a5a';
+    ctx.fillStyle = subColor;
     ctx.fillRect(0, groundY + 4, width, 2);
 
-    // Add some "cracks" or "details" that scroll
-    ctx.fillStyle = '#141824';
+    // Dynamic Cracks / Textures
     const tileSize = 128;
     const offset = -(camX % tileSize);
-    for (let x = offset; x < width; x += tileSize) {
-      ctx.fillRect(x, groundY + 10, 2, h - 20);
-      ctx.fillRect(x + 20, groundY + 30, 40, 2);
-      ctx.fillRect(x + 70, groundY + 60, 30, 2);
+    
+    if (phase === 1) { // Alley
+       ctx.fillStyle = crackColor;
+       for (let x = offset; x < width; x += tileSize) {
+         ctx.fillRect(x, groundY + 10, 2, h); 
+         ctx.fillRect(x + 20, groundY + 40, 40, 2);
+       }
+       ctx.fillStyle = '#2a4a2a'; // Moss patches
+       for (let x = offset; x < width; x += tileSize) {
+         ctx.fillRect(x + 50, groundY, 20, 8);
+         ctx.fillRect(x + 10, groundY + 20, 15, 10);
+       }
+    } else if (phase === 4) { // Aberration
+       ctx.fillStyle = crackColor;
+       for (let x = offset; x < width; x += tileSize) {
+         ctx.beginPath(); ctx.arc(x + 30, groundY + 40, 15, 0, Math.PI*2); ctx.fill();
+         ctx.beginPath(); ctx.arc(x + 90, groundY + 70, 20, 0, Math.PI*2); ctx.fill();
+       }
+       const time = typeof Game !== 'undefined' ? Game.totalFrames : 0;
+       ctx.fillStyle = `rgba(0, 255, 150, ${0.3 + Math.sin(time*0.1)*0.2})`;
+       for (let x = offset; x < width; x += tileSize) {
+         ctx.beginPath(); ctx.arc(x + 30, groundY + 40, 8, 0, Math.PI*2); ctx.fill();
+       }
+    } else if (phase === 6) { // Volcano Magma
+       for (let x = offset; x < width; x += tileSize) {
+         ctx.fillStyle = crackColor; // Glowing Red
+         ctx.fillRect(x + 20, groundY + 20, 40, 4);
+         ctx.fillRect(x + 40, groundY + 20, 4, 30);
+         ctx.fillStyle = '#ffaa00'; // Inner glow
+         ctx.fillRect(x + 22, groundY + 21, 36, 2);
+       }
+    } else {
+       // Standard Cracks
+       ctx.fillStyle = crackColor;
+       for (let x = offset; x < width; x += tileSize) {
+         ctx.fillRect(x, groundY + 10, 2, h - 20);
+         ctx.fillRect(x + 20, groundY + 30, 40, 2);
+         ctx.fillRect(x + 70, groundY + 60, 30, 2);
+       }
     }
   },
 

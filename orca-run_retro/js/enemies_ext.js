@@ -4,6 +4,7 @@
 class CloudPuffer extends Enemy {
   constructor(x) { 
     super(x, 'cloud_puffer', 1.5); 
+    this.hp = 4; this.maxHp = 4;
     this.baseY = this.y - 100 - Math.random() * 200; // Float high
     this.y = this.baseY;
     this.windTimer = 0;
@@ -42,6 +43,7 @@ class CloudPuffer extends Enemy {
 class AeroGlider extends Enemy {
   constructor(x) { 
     super(x, 'aero_glider', 1.2); 
+    this.hp = 4; this.maxHp = 4;
     this.y = -50; // Start off-screen top
     this.state = 'wait';
     this.targetX = Game.player ? Game.player.x : 400;
@@ -79,6 +81,7 @@ class AeroGlider extends Enemy {
 class StaticSpark extends Enemy {
   constructor(x) { 
     super(x, 'static_spark', 1.0); 
+    this.hp = 4; this.maxHp = 4;
     this.baseY = this.y - 150;
     this.y = this.baseY;
   }
@@ -181,6 +184,7 @@ class StormEagle {
 class NeonJelly extends Enemy {
   constructor(x) { 
     super(x, 'neon_jelly', 1.0); 
+    this.hp = 4; this.maxHp = 4;
     this.baseY = this.y - 50;
     this.pulseTimer = 0;
   }
@@ -212,7 +216,7 @@ class NeonJelly extends Enemy {
 }
 
 class RustySeeker extends Enemy {
-  constructor(x) { super(x, 'rusty_seeker', 1.2); }
+  constructor(x) { super(x, 'rusty_seeker', 1.2); this.hp = 4; this.maxHp = 4; }
   update(ss) {
     this.frame++; this.x -= ss;
     if (typeof Game !== 'undefined' && Game.player) {
@@ -238,7 +242,7 @@ class RustySeeker extends Enemy {
 }
 
 class BubbleSniper extends Enemy {
-  constructor(x) { super(x, 'bubble_sniper', 1.5); this.shootTimer = 0; }
+  constructor(x) { super(x, 'bubble_sniper', 1.5); this.hp = 4; this.maxHp = 4; this.shootTimer = 0; }
   update(ss) {
     this.frame++; this.x -= ss;
     this.shootTimer++;
@@ -315,7 +319,7 @@ class KrakenX {
 
 // --- STAGE 9: The Core ---
 class MagmaCrawler extends Enemy {
-  constructor(x) { super(x, 'magma_crawler', 1.0); this.y = 50; this.dropTimer = 0; }
+  constructor(x) { super(x, 'magma_crawler', 1.0); this.hp = 4; this.maxHp = 4; this.y = 50; this.dropTimer = 0; }
   update(ss) {
     this.frame++; this.x -= (ss + this.speed);
     this.dropTimer++;
@@ -332,6 +336,7 @@ class MagmaCrawler extends Enemy {
 class HeatFlicker extends Enemy {
   constructor(x) { 
     super(x, 'heat_flicker', 1.2); 
+    this.hp = 4; this.maxHp = 4;
     this.state = 'circle'; this.angle = 0;
   }
   update(ss) {
@@ -354,7 +359,7 @@ class HeatFlicker extends Enemy {
 }
 
 class CoreShard extends Enemy {
-  constructor(x) { super(x, 'core_shard', 1.5); this.baseY = this.y - 100; this.shootTimer = 0; }
+  constructor(x) { super(x, 'core_shard', 1.5); this.hp = 4; this.maxHp = 4; this.baseY = this.y - 100; this.shootTimer = 0; }
   update(ss) {
     this.frame++; this.x -= ss; this.y = this.baseY + Math.sin(this.frame*0.02)*20;
     this.shootTimer++;
@@ -375,7 +380,7 @@ class Vulcan {
   constructor(x, y) {
     this.x = x || 800; this.y = y || Physics.GROUND_Y - 80;
     this.hw = 80; this.hh = 100;
-    this.hp = 220; this.maxHp = 220;
+    this.hp = 150; this.maxHp = 150;
     this.alive = true; this.frame = 0;
     this.state = 'enter'; this.stateTimer = 100;
     this.flashTimer = 0;

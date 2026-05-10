@@ -34,7 +34,7 @@ const ItemManager = {
     if(Math.random()>this.DROP_RATE)return;
     let type;
     const t = eType.toLowerCase();
-    if (t.includes('crab') && !t.includes('hermit')) type = 'healS';
+    if (t.includes('crab') && !t.includes('hermit')) type = Math.random() < 0.5 ? 'healS' : 'healM';
     else if (t.includes('hermit')) type = 'atkUp';
     else if (t.includes('vending')) type = 'healM';
     else if (t.includes('seal')) type = 'atkUp';

@@ -408,6 +408,6 @@
   "relicChips": [
     { "relicId": "music_box", "x": 6000, "y": 490 }
   ],
-  "spawnX": -955,
+  "spawnX": 200,
   "spawnY": 531
 }

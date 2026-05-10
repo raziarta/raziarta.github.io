@@ -137,13 +137,16 @@ class CartShark extends Enemy {
 class SignalJelly extends Enemy {
   constructor() {
     super(Game.width, 'signal_jelly', 2.5);
-    this.hw = 12; this.hh = 10; // Head-only hitbox (dark/gray part at top)
-    this.hitboxOffsetY = -30; // Offset upward to match head position
+    this.hw = 20; this.hh = 20; // Hitbox size for the traffic light
+    this.hitboxOffsetY = -65;  // Offset upward to align with the head signal light
     this.hp = 16; this.maxHp = 16;
     this.baseY = 155 + Game.height * 0.15;
     this.y = this.baseY;
     this.state = 'enter'; this.stateTimer = 120;
     this.signalColor = 0; this.signalTimer = 0; this.hitStop = 0;
+  }
+  getHitbox() {
+    return { x: this.x, y: this.y + this.hitboxOffsetY, hw: this.hw, hh: this.hh };
   }
   update(player) {
     this.frame++; this.stateTimer--;
@@ -187,8 +190,8 @@ class SignalJelly extends Enemy {
         }
         if (this.stateTimer <= 0) { this.state = 'signal'; this.stateTimer = 300; } break;
     }
-    // Use hitbox offset for head-only collision
-    const hitProxy = { x: this.x, y: this.y + (this.hitboxOffsetY || 0), hw: this.hw, hh: this.hh };
+    // Use custom hitbox for head-only collision
+    const hitProxy = this.getHitbox();
     ProjectileManager.playerBullets.forEach(b => {
       if (b.alive && Physics.aabb(b, hitProxy)) {
         if (b.type === 'bomb') { if (!b.exploded) b.explode(); this.hitStop = 8; }
@@ -321,9 +324,6 @@ class SubmarineCrab extends Enemy {
   }
   die() {
     this.alive = false;
-    if (typeof ItemManager !== 'undefined' && Math.random() < 0.1) {
-      ItemManager.spawn(this.x, this.y, Math.random() < 0.5 ? 'healS' : 'healM');
-    }
   }
 }
 
@@ -347,9 +347,6 @@ class MorayEel extends Enemy {
   }
   die() {
     this.alive = false;
-    if (typeof ItemManager !== 'undefined' && Math.random() < 0.1) {
-      ItemManager.spawn(this.x, this.y, Math.random() < 0.5 ? 'healS' : 'healM');
-    }
     if (typeof AudioManager !== 'undefined') AudioManager.playSE('enemyDie');
   }
 }
@@ -388,9 +385,6 @@ class CarrierSeal extends Enemy {
   }
   die() {
     this.alive = false;
-    if (typeof ItemManager !== 'undefined' && Math.random() < 0.1) {
-      ItemManager.spawn(this.x, this.y, 'atkUp');
-    }
     if (typeof AudioManager !== 'undefined') AudioManager.playSE('enemyDie');
   }
 }
@@ -520,11 +514,13 @@ const EnemyManager = {
       } else {
         if (e.scrollWith) e.update(ss, player.x, player.y); else e.update();
       }
-      if (e.alive && !player.invincible && Physics.aabb(e, player)) player.takeDamage(e.damage, e.x);
+      const hitBox = e.getHitbox ? e.getHitbox() : e;
+      if (e.alive && !player.invincible && Physics.aabb(hitBox, player)) player.takeDamage(e.damage, e.x);
     });
     ProjectileManager.playerBullets.forEach(b => {
       this.enemies.forEach(e => {
-        if (b.alive && e.alive && Physics.aabb(b, e)) {
+        const hitBox = e.getHitbox ? e.getHitbox() : e;
+        if (b.alive && e.alive && Physics.aabb(b, hitBox)) {
           if (b.type === 'bomb') {
             if (!b.exploded) b.explode();
             e.hitStop = 8;

@@ -1,5 +1,7 @@
 // === BACKGROUNDS.JS - Parallax Image Layers ===
 const Backgrounds = {
+  USE_NEW_LORE_BGS: true, // Toggle for new Lore backgrounds (Stages 4-6)
+
   draw(ctx, camX, stageOrPhase) {
     // Accept either stage data object or phase index
     const stageData = typeof stageOrPhase === 'object' ? stageOrPhase : AssetLoader.getStage(stageOrPhase);
@@ -15,8 +17,13 @@ const Backgrounds = {
       ctx.fillRect(startX, Game.height - 50, drawW, 50);
     }
 
-    // Draw parallax layers
-    if (stageData.backgrounds) {
+    // Draw parallax layers (Skip for new lore BGs so we can draw custom pixel art)
+    let skipParallax = false;
+    if (this.USE_NEW_LORE_BGS && (phase === 3 || phase === 4 || phase === 5)) {
+      skipParallax = true;
+    }
+
+    if (!skipParallax && stageData.backgrounds) {
       stageData.backgrounds.forEach(layer => {
       const img = AssetLoader.img(layer.src);
       if (!img) return;
@@ -34,8 +41,8 @@ const Backgrounds = {
     }
 
     // Background Overlays / Tints
-    if (phase >= 3 && phase <= 5) {
-      // Chapter 2 (Abyss/Cave) darkening
+    if (!this.USE_NEW_LORE_BGS && phase >= 3 && phase <= 5) {
+      // Old Chapter 2 (Abyss/Cave) darkening
       let darkAlpha = (phase === 4) ? 0.5 : (phase === 5 ? 0.8 : 0);
       if (darkAlpha > 0) {
         ctx.fillStyle = `rgba(0, 0, 5, ${darkAlpha})`;
@@ -55,8 +62,123 @@ const Backgrounds = {
       ctx.fillRect(0, 0, Game.width, Game.height);
     }
 
-    // Cave / Environmental Walls
-    if (phase === 4 || phase === 5) {
+    // === NEW LORE BACKGROUNDS ===
+    if (this.USE_NEW_LORE_BGS) {
+      if (phase === 3) {
+        // Stage 4: Collapsed Underground City
+        ctx.fillStyle = '#0f1218'; ctx.fillRect(0, 0, Game.width, Game.height);
+        
+        const time = (typeof Game !== 'undefined') ? Game.totalFrames : 0;
+        const bX1 = (camX * 0.2) % 400;
+        const bX2 = (camX * 0.4) % 600;
+
+        // Far background ruins
+        ctx.fillStyle = '#1c222c';
+        for(let i = 0; i < 6; i++) {
+          const rx = (i * 300 - bX1 + 1200) % 1800 - 300;
+          const ry = 100 + Math.sin(i * 99) * 100;
+          ctx.fillRect(rx, ry, 150, Game.height);
+          // Blocky windows
+          ctx.fillStyle = '#11151a';
+          for(let wy = ry + 20; wy < Game.height; wy += 40) {
+             for(let wx = rx + 20; wx < rx + 130; wx += 30) {
+               if (Math.sin(wy*wx) > 0) ctx.fillRect(wx, wy, 15, 20);
+             }
+          }
+          ctx.fillStyle = '#1c222c';
+        }
+
+        // Mid background collapsed structures
+        ctx.fillStyle = '#262d3a';
+        for(let i = 0; i < 8; i++) {
+          const rx = (i * 200 - bX2 + 1600) % 1600 - 200;
+          const tilt = Math.sin(i * 123) * 0.2;
+          ctx.save();
+          ctx.translate(rx, 300 + Math.cos(i) * 150);
+          ctx.rotate(tilt);
+          ctx.fillRect(0, 0, 100, Game.height);
+          // Rebar sticking out
+          ctx.fillStyle = '#4a2f2f';
+          ctx.fillRect(10, -20, 4, 20); ctx.fillRect(40, -40, 4, 40);
+          ctx.restore();
+        }
+        
+        // Cave ceiling
+        ctx.fillStyle = '#0a0d12';
+        ctx.beginPath(); ctx.moveTo(0,0);
+        for(let x=0; x<=Game.width; x+=40) { ctx.lineTo(x, 40 + Math.sin((x+camX*0.5)*0.03)*30); }
+        ctx.lineTo(Game.width,0); ctx.fill();
+
+      } else if (phase === 4) {
+        // Stage 5: Aberration Habitat (Fleshy / Bioluminescent)
+        ctx.fillStyle = '#1a0510'; ctx.fillRect(0, 0, Game.width, Game.height);
+        const time = (typeof Game !== 'undefined') ? Game.totalFrames : 0;
+        const pX1 = (camX * 0.3) % 800;
+
+        // Fleshy pulsating pillars
+        for(let i=0; i<5; i++) {
+          const x = (i * 350 - pX1 + 1750) % 1750 - 200;
+          const pulse = Math.sin(time * 0.05 + i) * 15;
+          ctx.fillStyle = '#3a1020';
+          ctx.beginPath();
+          ctx.moveTo(x - 30 - pulse, 0);
+          ctx.quadraticCurveTo(x - 80, Game.height/2, x - 40 - pulse, Game.height);
+          ctx.lineTo(x + 40 + pulse, Game.height);
+          ctx.quadraticCurveTo(x + 80, Game.height/2, x + 30 + pulse, 0);
+          ctx.fill();
+
+          // Bioluminescent spots
+          ctx.fillStyle = `rgba(0, 255, 150, ${0.3 + Math.sin(time*0.08+i)*0.2})`;
+          for(let sy=50; sy<Game.height; sy+=120) {
+            ctx.beginPath(); ctx.arc(x + Math.sin(sy)*20, sy, 8+Math.cos(sy)*4, 0, Math.PI*2); ctx.fill();
+          }
+        }
+        
+        // Fleshy ceiling/floor bounds
+        ctx.fillStyle = '#220814';
+        ctx.beginPath(); ctx.moveTo(0,0);
+        for(let x=0; x<=Game.width; x+=30) { ctx.lineTo(x, 60 + Math.sin((x+camX*0.6)*0.04 + time*0.02)*20); }
+        ctx.lineTo(Game.width,0); ctx.fill();
+
+      } else if (phase === 5) {
+        // Stage 6: Void / Nothingness (Monochrome Grid + Glitch)
+        ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, Game.width, Game.height);
+        const time = (typeof Game !== 'undefined') ? Game.totalFrames : 0;
+        
+        ctx.strokeStyle = `rgba(255, 255, 255, ${0.1 + Math.random()*0.05})`;
+        ctx.lineWidth = 1;
+        
+        // Perspective Grid
+        const cx = Game.width / 2;
+        const cy = Game.height / 2;
+        const scrollX = (camX * 2) % 100;
+        
+        for(let i=0; i<20; i++) {
+          const scale = Math.pow(1.2, i);
+          const y = cy + scale * 10;
+          if (y > Game.height) break;
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(Game.width, y); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(0, cy - scale * 10); ctx.lineTo(Game.width, cy - scale * 10); ctx.stroke();
+        }
+        
+        for(let x=-1000; x<2000; x+=100) {
+          const adjX = x - scrollX;
+          ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(adjX, Game.height); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(adjX, 0); ctx.stroke();
+        }
+
+        // Random glitch rectangles (Void anomalies)
+        ctx.fillStyle = '#ffffff';
+        if (Math.random() < 0.2) {
+          ctx.globalAlpha = 0.8;
+          ctx.fillRect(Math.random() * Game.width, Math.random() * Game.height, Math.random() * 100, Math.random() * 5);
+          ctx.globalAlpha = 1.0;
+        }
+      }
+    }
+
+    // Cave / Environmental Walls (Old Logic fallback)
+    if (!this.USE_NEW_LORE_BGS && (phase === 4 || phase === 5)) {
       ctx.save();
       let wallColor = '#1a202c';
       if (phase === 5) wallColor = '#111520';

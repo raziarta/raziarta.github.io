@@ -163,7 +163,7 @@
     {
       "dist": 2500,
       "enemies": [
-        "acHermitCrab"
+        "tireShark"
       ]
     },
     {
@@ -177,7 +177,7 @@
     {
       "dist": 4000,
       "enemies": [
-        "acHermitCrab",
+        "vendingMachine",
         "tireShark"
       ]
     },
@@ -192,7 +192,7 @@
       "dist": 5500,
       "enemies": [
         "tireShark",
-        "acHermitCrab"
+        "vendingMachine"
       ]
     },
     {
@@ -207,7 +207,7 @@
       "dist": 7100,
       "enemies": [
         "vendingMachine",
-        "acHermitCrab"
+        "tireShark"
       ]
     },
     {
@@ -221,8 +221,8 @@
     {
       "dist": 8800,
       "enemies": [
-        "acHermitCrab",
-        "acHermitCrab"
+        "tireShark",
+        "vendingMachine"
       ]
     },
     {
@@ -244,7 +244,7 @@
     {
       "dist": 11400,
       "enemies": [
-        "acHermitCrab",
+        "vendingMachine",
         "tireShark",
         "tireShark"
       ]
@@ -253,7 +253,7 @@
       "dist": 12200,
       "enemies": [
         "vendingMachine",
-        "acHermitCrab",
+        "vendingMachine",
         "tireShark"
       ]
     },

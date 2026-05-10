@@ -180,7 +180,21 @@ const LevelManager = {
           setTimeout(() => {
             const spawnX = wave.dist - this.stageDistance;
             const spawnY = wave.y;
-            EnemyManager.spawn(type, spawnX, spawnY);
+            
+            let finalType = type;
+            // Stage 4 Specific Balance: 2/3 basic (1-3), 1/3 new (4-6)
+            if (this.currentStage === 4) { // Stage 5 is index 4 (Stage 4 is index 3)
+              const r = Math.random();
+              const basicPool = ['tire_shark', 'vending_machine', 'ac_hermit_crab'];
+              const newPool = ['submarine_crab', 'moray_eel', 'carrier_seal'];
+              if (r < 0.66) {
+                finalType = basicPool[Math.floor(Math.random() * basicPool.length)];
+              } else {
+                finalType = newPool[Math.floor(Math.random() * newPool.length)];
+              }
+            }
+            
+            EnemyManager.spawn(finalType, spawnX, spawnY);
           }, i * 200);
         });
         this.waveIndex++;

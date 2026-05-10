@@ -8,9 +8,9 @@ const WorldMap = {
   orcaY: 0,
   orcaTargetX: 0,
   orcaTargetY: 0,
-  animFrame: 0,
   mapImage1: null,
   mapImage2: null,
+  mapImage3: null,
   fadeAlpha: 0,
   fadeState: 'none', // none, out, in
   pendingMapSwitch: 0,
@@ -32,12 +32,21 @@ const WorldMap = {
     { id: 6, label: 'ステージ6', name: '第三層 - 終焉の淵', x: 0.48, y: 0.95, stageIndex: 6 },
   ],
 
+  // Stage nodes for Map 3 (Core - stages 7-9)
+  map3Nodes: [
+    { id: 7, label: 'ステージ7', name: '雲海', x: 0.50, y: 0.92, stageIndex: 7 },
+    { id: 8, label: 'ステージ8', name: '海底遺跡', x: 0.50, y: 0.50, stageIndex: 8 },
+    { id: 9, label: 'ステージ9', name: '星の核', x: 0.50, y: 0.08, stageIndex: 9 },
+  ],
+
   init() {
     // Load map images
     this.mapImage1 = new Image();
     this.mapImage1.src = 'assets/backgrounds/world1/原案1.png';
     this.mapImage2 = new Image();
     this.mapImage2.src = 'assets/backgrounds/world2/原案2.png';
+    this.mapImage3 = new Image();
+    this.mapImage3.src = 'assets/backgrounds/world3/原案3.png';
     
     this.selectedNode = 1; // Default to stage 1
     this.currentMap = 1;
@@ -45,7 +54,9 @@ const WorldMap = {
   },
 
   getNodes() {
-    return this.currentMap === 1 ? this.map1Nodes : this.map2Nodes;
+    if (this.currentMap === 1) return this.map1Nodes;
+    if (this.currentMap === 2) return this.map2Nodes;
+    return this.map3Nodes;
   },
 
   getClearedStages() {
@@ -88,7 +99,7 @@ const WorldMap = {
     
     // Calculate vertical pan offset based on orca Y
     this.panOffset = 0;
-    const img = this.currentMap === 1 ? this.mapImage1 : this.mapImage2;
+    const img = this.currentMap === 1 ? this.mapImage1 : (this.currentMap === 2 ? this.mapImage2 : this.mapImage3);
     if (img && img.complete) {
       const W = Game.width, H = Game.height;
       const scale = Math.max(W / img.width, H / img.height);
@@ -134,7 +145,7 @@ const WorldMap = {
     ctx.fillRect(0, 0, W, H);
     
     // Draw map image
-    const img = this.currentMap === 1 ? this.mapImage1 : this.mapImage2;
+    const img = this.currentMap === 1 ? this.mapImage1 : (this.currentMap === 2 ? this.mapImage2 : this.mapImage3);
     if (img && img.complete) {
       // Fill canvas with map image, maintaining aspect ratio
       const scale = Math.max(W / img.width, H / img.height);
@@ -154,7 +165,7 @@ const WorldMap = {
     ctx.fillStyle = '#e8d0a0';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    const mapTitle = this.currentMap === 1 ? 'この世界の成れ果て' : '深淵';
+    const mapTitle = this.currentMap === 1 ? 'この世界の成れ果て' : (this.currentMap === 2 ? '深淵' : '最深部 - 星の核');
     ctx.fillText(mapTitle, W / 2, 20);
     ctx.restore();
     
@@ -241,19 +252,31 @@ const WorldMap = {
       const lastNode = nodes[nodes.length - 1]; // Stage 3
       const c = this.getNodeCoords(lastNode);
       ctx.beginPath();
-      ctx.setLineDash([4, 4]);
       ctx.moveTo(c.x * W, c.y * H + this.panOffset);
-      const ty = (c.y - 0.15) * H + this.panOffset;
-      ctx.lineTo(c.x * W, ty);
+      ctx.lineTo(c.x * W, (c.y - 0.15) * H + this.panOffset);
       ctx.stroke();
     } else if (this.currentMap === 2) {
+      // To map 1
       const firstNode = nodes[0]; // Stage 4
+      const c1 = this.getNodeCoords(firstNode);
+      ctx.beginPath();
+      ctx.moveTo(c1.x * W, c1.y * H + this.panOffset);
+      ctx.lineTo(c1.x * W, (c1.y - 0.15) * H + this.panOffset);
+      ctx.stroke();
+      // To map 3
+      const lastNode = nodes[nodes.length - 1]; // Stage 6
+      const c2 = this.getNodeCoords(lastNode);
+      ctx.beginPath();
+      ctx.moveTo(c2.x * W, c2.y * H + this.panOffset);
+      ctx.lineTo(c2.x * W, (c2.y + 0.15) * H + this.panOffset);
+      ctx.stroke();
+    } else if (this.currentMap === 3) {
+      // To map 2
+      const firstNode = nodes[0]; // Stage 7
       const c = this.getNodeCoords(firstNode);
       ctx.beginPath();
-      ctx.setLineDash([4, 4]);
       ctx.moveTo(c.x * W, c.y * H + this.panOffset);
-      const ty = (c.y - 0.15) * H + this.panOffset;
-      ctx.lineTo(c.x * W, ty);
+      ctx.lineTo(c.x * W, (c.y + 0.15) * H + this.panOffset);
       ctx.stroke();
     }
     
@@ -303,30 +326,35 @@ const WorldMap = {
     
     // Map switch buttons
     ctx.save();
-    const canGoMap2 = this.currentMap === 1 && cleared.includes(3);
-    const canGoMap1 = this.currentMap === 2;
     
-    if (canGoMap2) {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-      ctx.fillRect(W - 160, 60, 150, 35);
-      ctx.strokeStyle = '#8866cc';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(W - 160, 60, 150, 35);
-      ctx.font = '8px "Press Start 2P", monospace';
-      ctx.fillStyle = '#cc99ff';
-      ctx.textAlign = 'center';
-      ctx.fillText('深淵へ →', W - 85, 82);
-    }
-    if (canGoMap1) {
+    // Left button (Go back)
+    if (this.currentMap === 2) {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
       ctx.fillRect(10, 60, 150, 35);
-      ctx.strokeStyle = '#66aa88';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(10, 60, 150, 35);
-      ctx.font = '8px "Press Start 2P", monospace';
-      ctx.fillStyle = '#88ccaa';
-      ctx.textAlign = 'center';
+      ctx.strokeStyle = '#66aa88'; ctx.lineWidth = 2; ctx.strokeRect(10, 60, 150, 35);
+      ctx.font = '8px "Press Start 2P", monospace'; ctx.fillStyle = '#88ccaa'; ctx.textAlign = 'center';
       ctx.fillText('← 地上へ', 85, 82);
+    } else if (this.currentMap === 3) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.fillRect(10, 60, 150, 35);
+      ctx.strokeStyle = '#8866cc'; ctx.lineWidth = 2; ctx.strokeRect(10, 60, 150, 35);
+      ctx.font = '8px "Press Start 2P", monospace'; ctx.fillStyle = '#cc99ff'; ctx.textAlign = 'center';
+      ctx.fillText('← 深淵へ', 85, 82);
+    }
+    
+    // Right button (Go deeper)
+    if (this.currentMap === 1 && cleared.includes(3)) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.fillRect(W - 160, 60, 150, 35);
+      ctx.strokeStyle = '#8866cc'; ctx.lineWidth = 2; ctx.strokeRect(W - 160, 60, 150, 35);
+      ctx.font = '8px "Press Start 2P", monospace'; ctx.fillStyle = '#cc99ff'; ctx.textAlign = 'center';
+      ctx.fillText('深淵へ →', W - 85, 82);
+    } else if (this.currentMap === 2 && cleared.includes(6)) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.fillRect(W - 160, 60, 150, 35);
+      ctx.strokeStyle = '#cc4444'; ctx.lineWidth = 2; ctx.strokeRect(W - 160, 60, 150, 35);
+      ctx.font = '8px "Press Start 2P", monospace'; ctx.fillStyle = '#ff6666'; ctx.textAlign = 'center';
+      ctx.fillText('最深部へ →', W - 85, 82);
     }
     ctx.restore();
     
@@ -335,6 +363,21 @@ const WorldMap = {
       ctx.fillStyle = `rgba(0, 0, 0, ${this.fadeAlpha})`;
       ctx.fillRect(0, 0, W, H);
     }
+
+    // Home Button - Top Left
+    const btnW = 120, btnH = 32;
+    const btnX = 20, btnY = 15;
+    ctx.save();
+    ctx.fillStyle = 'rgba(68, 204, 255, 0.2)';
+    ctx.strokeStyle = '#44ccff';
+    ctx.lineWidth = 2;
+    ctx.fillRect(btnX, btnY, btnW, btnH);
+    ctx.strokeRect(btnX, btnY, btnW, btnH);
+    ctx.font = '14px "DotGothic16", sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.fillText('ホームへ戻る', btnX + btnW / 2, btnY + 22);
+    ctx.restore();
   },
 
   handleClick(mx, my) {
@@ -342,18 +385,25 @@ const WorldMap = {
     const W = Game.width, H = Game.height;
     const cleared = this.getClearedStages();
     
-    // Check map switch buttons
-    if (this.currentMap === 1 && cleared.includes(3)) {
-      if (mx > W - 160 && mx < W - 10 && my > 60 && my < 95) {
-        this._switchMap(2);
-        return;
-      }
+    // Check Home button
+    const btnW = 120, btnH = 32;
+    const btnX = 20, btnY = 15;
+    if (mx >= btnX && mx <= btnX + btnW && my >= btnY && my <= btnY + btnH) {
+      if (typeof AudioManager !== 'undefined') AudioManager.playSE('select');
+      Game.resetToTitle();
+      return;
     }
-    if (this.currentMap === 2) {
-      if (mx > 10 && mx < 160 && my > 60 && my < 95) {
-        this._switchMap(1);
-        return;
-      }
+
+    // Check map switch buttons
+    if (mx > W - 160 && mx < W - 10 && my > 60 && my < 95) {
+      if (this.currentMap === 1 && cleared.includes(3)) this._switchMap(2);
+      else if (this.currentMap === 2 && cleared.includes(6)) this._switchMap(3);
+      return;
+    }
+    if (mx > 10 && mx < 160 && my > 60 && my < 95) {
+      if (this.currentMap === 2) this._switchMap(1);
+      else if (this.currentMap === 3) this._switchMap(2);
+      return;
     }
     
     // Check node clicks
@@ -394,11 +444,7 @@ const WorldMap = {
     
     let targetNode = null;
     if (key === 'ArrowUp' || key === 'w' || key === 'W') {
-      // Find nodes with smaller Y (visually above)
-      const potential = nodes.filter(n => {
-        const p = this.getNodeCoords(n);
-        return p.y < currentPos.y - 0.01;
-      });
+      const potential = nodes.filter(n => this.getNodeCoords(n).y < currentPos.y - 0.01);
       if (potential.length > 0) {
         potential.sort((a, b) => this.getNodeCoords(b).y - this.getNodeCoords(a).y);
         targetNode = potential[0];
@@ -409,15 +455,15 @@ const WorldMap = {
       }
     }
     if (key === 'ArrowDown' || key === 's' || key === 'S') {
-      // Find nodes with larger Y (visually below)
-      const potential = nodes.filter(n => {
-        const p = this.getNodeCoords(n);
-        return p.y > currentPos.y + 0.01;
-      });
+      const potential = nodes.filter(n => this.getNodeCoords(n).y > currentPos.y + 0.01);
       if (potential.length > 0) {
         potential.sort((a, b) => this.getNodeCoords(a).y - this.getNodeCoords(b).y);
         targetNode = potential[0];
       } else if (this.currentMap === 1 && currentIdx === nodes.length - 1 && this.getClearedStages().includes(3)) {
+        this._switchMap(2);
+      } else if (this.currentMap === 2 && currentIdx === nodes.length - 1 && this.getClearedStages().includes(6)) {
+        this._switchMap(3);
+      } else if (this.currentMap === 3 && currentIdx === 0) {
         this._switchMap(2);
       }
     }
@@ -436,13 +482,33 @@ const WorldMap = {
     }
   },
 
-  _switchMap(targetMap) {
+  _switchMap(targetMap, force = false) {
+    if (targetMap === 3 && !force) {
+      // Show difficulty warning dialog before moving to Map 3
+      const dialog = document.getElementById('chapter3-dialog');
+      if (dialog && typeof Game !== 'undefined') {
+        dialog.classList.remove('hidden');
+        Game.ch3DialogYesCallback = () => {
+          this._switchMap(3, true);
+          Game.ch3DialogYesCallback = null;
+          Game.ch3DialogNoCallback = null;
+        };
+        Game.ch3DialogNoCallback = () => {
+          Game.ch3DialogYesCallback = null;
+          Game.ch3DialogNoCallback = null;
+        };
+      }
+      return;
+    }
+
     this.fadeState = 'out';
     this.fadeAlpha = 0;
     this.pendingMapSwitch = targetMap;
     // Set selected node to first/last of target map
-    if (targetMap === 2) {
-      this.selectedNode = 4;
+    if (targetMap === 3) {
+      this.selectedNode = 7;
+    } else if (targetMap === 2) {
+      this.selectedNode = (this.currentMap === 3) ? 6 : 4;
     } else {
       this.selectedNode = 3;
     }
@@ -450,6 +516,7 @@ const WorldMap = {
       AudioManager.playSE('dive');
       AudioManager.stopAll();
       if (targetMap === 1) AudioManager.startRoadBGM();
+      else if (targetMap === 3) AudioManager.startSkyBGM();
       else AudioManager.startAbyssBGM();
     }
   },
@@ -473,21 +540,21 @@ const WorldMap = {
         potential.sort((a, b) => this.getNodeCoords(b).y - this.getNodeCoords(a).y);
         targetNode = potential[0];
       } else if (this.currentMap === 1 && this.getClearedStages().includes(3)) {
-        // Transition to Map 2 if at the top of Map 1
         this._switchMap(2);
       } else if (this.currentMap === 2) {
-        // Transition back to Map 1 if at the top of Map 2
         this._switchMap(1);
       }
     } else if (deltaY > 0) { // Scroll Down (Seek larger Y)
-      // Find nodes with larger Y, then pick the one with the smallest Y among those (closest downward)
-      const potential = nodes.filter(n => {
-        const p = this.getNodeCoords(n);
-        return p.y > currentPos.y + 0.01;
-      });
+      const potential = nodes.filter(n => this.getNodeCoords(n).y > currentPos.y + 0.01);
       if (potential.length > 0) {
         potential.sort((a, b) => this.getNodeCoords(a).y - this.getNodeCoords(b).y);
         targetNode = potential[0];
+      } else if (this.currentMap === 1 && currentIdx === nodes.length - 1 && this.getClearedStages().includes(3)) {
+        this._switchMap(2);
+      } else if (this.currentMap === 2 && currentIdx === nodes.length - 1 && this.getClearedStages().includes(6)) {
+        this._switchMap(3);
+      } else if (this.currentMap === 3 && currentIdx === 0) {
+        this._switchMap(2);
       }
     }
 
@@ -498,3 +565,4 @@ const WorldMap = {
     }
   },
 };
+

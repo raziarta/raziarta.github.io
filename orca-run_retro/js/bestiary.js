@@ -90,11 +90,13 @@ const Bestiary = {
   ],
 
   getUnlockedEntries() {
+    return this.entries;
+  },
+
+  isEntryUnlocked(entry) {
+    if (entry.unlockCondition === 'always') return true;
     const cleared = JSON.parse(localStorage.getItem('orcaRunCleared') || '[]');
-    return this.entries.filter(e => {
-      if (e.unlockCondition === 'always') return true;
-      return cleared.includes(Number(e.unlockCondition));
-    });
+    return cleared.includes(Number(entry.unlockCondition));
   },
 
   open() {
@@ -146,11 +148,11 @@ const Bestiary = {
     ctx.fillRect(detailX, detailY, detailW, detailH);
 
     // Draw List
-    const unlocked = this.getUnlockedEntries();
+    const allEntries = this.getUnlockedEntries();
     let y = listY + 10;
     let currentCategory = '';
     
-    unlocked.forEach(entry => {
+    allEntries.forEach(entry => {
       const catLabels = {
         'player': '─── プレイヤー ───',
         'ch1': '─── 第1章 雑魚敵 ───',
@@ -169,6 +171,7 @@ const Bestiary = {
         y += 24;
       }
 
+      const isUnlocked = this.isEntryUnlocked(entry);
       const isSelected = this.selectedId === entry.id;
       if (isSelected) {
         ctx.fillStyle = 'rgba(68, 204, 255, 0.3)';
@@ -176,8 +179,8 @@ const Bestiary = {
       }
       
       ctx.font = '14px "DotGothic16", sans-serif';
-      ctx.fillStyle = isSelected ? '#ffffff' : '#44ccff';
-      ctx.fillText(entry.name, listX + 15, y + 20);
+      ctx.fillStyle = isSelected ? '#ffffff' : (isUnlocked ? '#44ccff' : '#2a4a5a');
+      ctx.fillText(isUnlocked ? entry.name : '??? (未調査)', listX + 15, y + 20);
       
       entry.clickArea = { x: listX + 5, y: y, w: listW - 10, h: 30 };
       y += 35;
@@ -187,7 +190,7 @@ const Bestiary = {
     const selectedEntry = this.entries.find(e => e.id === this.selectedId);
     if (selectedEntry) {
       // Check if selected entry is actually unlocked
-      const isUnlocked = unlocked.some(u => u.id === selectedEntry.id);
+      const isUnlocked = this.isEntryUnlocked(selectedEntry);
       
       ctx.font = '24px "DotGothic16", sans-serif';
       ctx.fillStyle = '#ffffff';

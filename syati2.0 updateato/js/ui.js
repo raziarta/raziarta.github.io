@@ -223,16 +223,13 @@ function respawnPlayer() {
     } else {
         const currentY = G.playerBody.position.y;
         let bestMembraneY = 0;
-        let bestDist = 100;
-        const searchDist = config.deathFallMode === 'none' ? 5 : Number(config.deathFallMode);
+        let bestDist = Infinity; // 初期値を Infinity にして、最初の候補が必ず採用されるようにする
 
         G.membranes.forEach(m => {
-            if (m.y < currentY && currentY - m.y <= searchDist) {
-                const dist = currentY - m.y;
-                if (dist < bestDist) {
-                    bestMembraneY = m.y;
-                    bestDist = dist;
-                }
+            const dist = currentY - m.y; // 正の値 = 現在地より下の膜
+            if (dist > 0 && dist < bestDist) { // 「最も近い下の膜」を選ぶ
+                bestDist = dist;
+                bestMembraneY = m.y;
             }
         });
         if (bestMembraneY === 0 && currentY > 5) bestMembraneY = currentY - 5;

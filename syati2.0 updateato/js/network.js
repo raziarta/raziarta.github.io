@@ -418,6 +418,7 @@ function handleNetworkData(rawData, sourceConn) {
             if (data.density !== undefined) config.density = data.density;
             if (data.goalHeight !== undefined) config.goalHeight = data.goalHeight;
             if (data.maxLives !== undefined) config.maxLives = data.maxLives;
+            if (data.deathFallMode !== undefined) config.deathFallMode = data.deathFallMode;
 
             G.isStarted = true;
             G.isClientInLobby = false;

@@ -933,7 +933,7 @@
                 settingDefs.forEach(s => { config[s.key] = s.value; });
                 config.aiCount = (config.aiCount > 0) ? config.aiCount : false;
                 
-                if (G.isOnline && G.isHost) broadcastEvent(6, { seed: G.randomSeed, mode: 'tutorial', aiCount: config.aiCount, maxLives: config.maxLives });
+                if (G.isOnline && G.isHost) broadcastEvent(6, { seed: G.randomSeed, mode: 'tutorial', aiCount: config.aiCount, maxLives: config.maxLives, deathFallMode: config.deathFallMode });
                 else if (!G.isOnline) G.randomSeed = Math.random();
                 if (window.stopMenuOcean) window.stopMenuOcean();
                 document.getElementById('ui-layer').style.display = 'block';
@@ -962,7 +962,7 @@
                         logStatus(`接続待機中... (${activeCount}/${G.peerNames.size - 1})`);
                         return;
                     }
-                    broadcastEvent(6, { seed: G.randomSeed, mode: 'main', areaSize: config.areaSize, density: config.density, goalHeight: config.goalHeight, maxLives: config.maxLives, aiCount: config.aiCount });
+                    broadcastEvent(6, { seed: G.randomSeed, mode: 'main', areaSize: config.areaSize, density: config.density, goalHeight: config.goalHeight, maxLives: config.maxLives, aiCount: config.aiCount, deathFallMode: config.deathFallMode || 'none' });
                 } else if (!G.isOnline) G.randomSeed = Math.random();
                 if (window.stopMenuOcean) window.stopMenuOcean();
                 document.getElementById('ui-layer').style.display = 'block';

@@ -115,6 +115,9 @@ function startDeathSequence() {
     G.isDead = true;
     G.deathTimer = 8.0;
     G.playerLives = 0;
+    // [FIXED] 死亡した瞬間の高度を記録（リスポーン計算用）
+    G.deathPositionY = G.playerBody.position.y;
+
     // [UPDATED] Send Death/Kill Stats
     // デス・キル情報をホストへ送信
     if (G.isOnline && !G.isHost) {
@@ -252,22 +255,39 @@ function respawnPlayer() {
         spawnY = 5.0;
         spawnZ = 1.5;
     } else {
-        const currentY = G.playerBody.position.y;
-        let bestMembraneY = 0;
-        let bestDist = Infinity; // 初期値を Infinity にして、最初の候補が必ず採用されるようにする
+        // [FIXED] 死んだ瞬間の高度を基準に計算する
+        const currentY = G.deathPositionY || G.playerBody.position.y;
+        const fallMode = config.deathFallMode || 'none';
 
-        G.membranes.forEach(m => {
-            const dist = currentY - m.y; // 正の値 = 現在地より下の膜
-            if (dist > 0 && dist < bestDist) { // 「最も近い下の膜」を選ぶ
-                bestDist = dist;
-                bestMembraneY = m.y;
+        if (fallMode === 'none') {
+            spawnX = G.playerBody.position.x;
+            spawnY = currentY + 0.5;
+            spawnZ = G.playerBody.position.z;
+        } else {
+            const fallLimit = (fallMode === '50') ? 50 : 25;
+            const targetY = Math.max(2.0, currentY - fallLimit);
+
+            // 途中にチェックポイント（膜）があるか探す
+            let highestMembraneUnderMe = -1;
+            G.membranes.forEach(m => {
+                // 自分より下、かつ 落下目標(targetY) より上にある「最も高い膜」
+                if (m.y < currentY && m.y >= targetY - 1.0) {
+                    if (m.y > highestMembraneUnderMe) {
+                        highestMembraneUnderMe = m.y;
+                    }
+                }
+            });
+
+            if (highestMembraneUnderMe !== -1) {
+                // 途中に膜があればそこで止まる
+                spawnY = highestMembraneUnderMe + 2.0;
+            } else {
+                // 途中に膜がなければ、予定通り一律落下
+                spawnY = targetY;
             }
-        });
-        if (bestMembraneY === 0 && currentY > 5) bestMembraneY = currentY - 5;
-
-        spawnX = config.areaSize / 2 + (Math.random() - 0.5) * 2;
-        spawnY = bestMembraneY + 2.0;
-        spawnZ = config.areaSize / 2 + (Math.random() - 0.5) * 2;
+            spawnX = config.areaSize / 2 + (Math.random() - 0.5) * 2;
+            spawnZ = config.areaSize / 2 + (Math.random() - 0.5) * 2;
+        }
     }
 
     G.entities.forEach(ent => {

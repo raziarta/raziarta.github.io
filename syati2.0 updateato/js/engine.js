@@ -391,10 +391,12 @@ function updateFixedLogic(dt) {
         if (G.deathTimer<=0) respawnPlayer();
         else G.deathTextEl.innerText='YOU DIED\n'+Math.ceil(G.deathTimer);
         G.playerBody.linearVelocity.set(0,0,0);
-        // 十字架をプレイヤー座標に追従
+        // [FIXED] 十字架をその場に固定（重力落下を防ぐ）
+        /*
         if (G.crossMesh) {
             G.crossMesh.position.set(pos.x, pos.y, pos.z);
         }
+        */
     }
 
     // 無敵更新
@@ -518,9 +520,12 @@ function renderVisuals(dt) {
             ent.mesh.visible = !ent.isDead;
             if (ent._deathCrossMesh) {
                 ent._deathCrossMesh.visible = !!ent.isDead;
+                // [FIXED] ネットワークプレイヤーの十字架もその場に固定
+                /*
                 if (ent.isDead) {
                     ent._deathCrossMesh.position.lerp(ent.mesh.position, 0.2);
                 }
+                */
             }
         }
     });

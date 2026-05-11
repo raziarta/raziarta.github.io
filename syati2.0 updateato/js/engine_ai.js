@@ -675,16 +675,32 @@ function animateProjectiles(dt) {
         const maxLifeTime = (baseRange / pSpeed) * 1000 * pRangeMult;
         if (exploded || age > maxLifeTime || p.position.y < -20) {
             if (exploded && p._hitBody && (G.isHost || !G.isOnline)) {
-                if (p._hitBody === G.playerBody) takeDamage(pDamage);
                 const dx = p._hitBody.position.x - p.position.x, dy = p._hitBody.position.y - p.position.y, dz = p._hitBody.position.z - p.position.z, d = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
                 const kbx = (dx / d) * 15, kby = -12, kbz = (dz / d) * 15;
-                p._hitBody.linearVelocity.x += kbx; p._hitBody.linearVelocity.y += kby; p._hitBody.linearVelocity.z += kbz;
 
-                // ホスト: ネットワークプレイヤーにダメージ＋ノックバックを送信
+                // 1. ホスト自身へのヒット処理
+                if (p._hitBody === G.playerBody) {
+                    if (G.isInvincible) {
+                        p._hitFlag = false; // ヒットをキャンセル
+                    } else {
+                        G.lastDamageSourceId = p.ownerId || resolvePeerId(p.ownerBody);
+                        console.log(`[DEBUG] Host (Self) hit. Attacker: ${G.lastDamageSourceId}`);
+                        takeDamage(pDamage);
+                        G.playerBody.linearVelocity.x += kbx;
+                        G.playerBody.linearVelocity.y += kby;
+                        G.playerBody.linearVelocity.z += kbz;
+                    }
+                }
+
+                // 2. ネットワークプレイヤーへのヒット処理
                 if (G.isHost && G.isOnline) {
                     for (const [peerId, netEnt] of G.networkEntities) {
                         if (netEnt.body === p._hitBody) {
-                            sendToClient(peerId, 21, { targetPeerId: peerId, damage: pDamage, kbx, kby, kbz });
+                            if (netEnt.isInvincible) break;
+                            // [UPDATED] Hit Logic & Attribution
+                            G.lastDamageSourceId = p.ownerId || resolvePeerId(p.ownerBody);
+                            console.log(`[DEBUG] Host detected hit on ${peerId}. Attacker: ${G.lastDamageSourceId}`);
+                            sendToClient(peerId, 21, { targetPeerId: peerId, damage: pDamage, kbx, kby, kbz, attackerId: G.lastDamageSourceId });
                             break;
                         }
                     }

@@ -115,7 +115,46 @@ function startDeathSequence() {
     G.isDead = true;
     G.deathTimer = 8.0;
     G.playerLives = 0;
-    G.myDeaths++;
+    // [UPDATED] Send Death/Kill Stats
+    // デス・キル情報をホストへ送信
+    if (G.isOnline && !G.isHost) {
+        if (!G.myDeaths) G.myDeaths = 0;
+        G.myDeaths++;
+        console.log(`[DEBUG] Client reporting death to host. Deaths: ${G.myDeaths}, KilledBy: ${G.lastDamageSourceId}`);
+        broadcastEvent(30, {
+            peerId: G.myPeerId,
+            deaths: G.myDeaths,
+            killedBy: G.lastDamageSourceId || null
+        });
+        G.lastDamageSourceId = null;
+    } else if (G.isHost && G.isOnline) {
+        // ホスト自身が死んだ場合はローカルで直接処理
+        if (!G.myDeaths) G.myDeaths = 0;
+        G.myDeaths++;
+        console.log(`[DEBUG] Host (Self) died. Deaths: ${G.myDeaths}, KilledBy: ${G.lastDamageSourceId}`);
+        if (!G.peerStats) G.peerStats = new Map();
+        const myId = G.myPeerId;
+        if (!G.peerStats.has(myId)) G.peerStats.set(myId, { kills: 0, deaths: 0 });
+        G.peerStats.get(myId).deaths = G.myDeaths;
+        if (G.lastDamageSourceId) {
+            if (!G.peerStats.has(G.lastDamageSourceId)) {
+                G.peerStats.set(G.lastDamageSourceId, { kills: 0, deaths: 0 });
+            }
+            G.peerStats.get(G.lastDamageSourceId).kills++;
+        }
+        G.lastDamageSourceId = null;
+        // 全クライアントに配信
+        const statsObj = {};
+        G.peerStats.forEach((v, k) => { statsObj[k] = v; });
+        broadcastEvent(31, { stats: statsObj });
+        if (typeof updateScoreboard === 'function') updateScoreboard();
+    }
+
+    // 死亡状態を全員に通知（十字架表示のため）
+    if (G.isOnline) {
+        broadcastEvent(33, { peerId: G.myPeerId, isDead: true });
+    }
+
     updateLifeHUD();
 
     if (!G.deathTextEl) {
@@ -136,63 +175,55 @@ function startDeathSequence() {
     G.deathTextEl.style.display = 'block';
 
     G.playerBody.linearVelocity.set(0, 0, 0);
-
-    // 落下モード
-    if (config.deathFallMode === '50') {
-        G.playerBody.resetPosition(G.playerBody.position.x, G.playerBody.position.y + 50, G.playerBody.position.z);
-    } else if (config.deathFallMode === '25') {
-        G.playerBody.resetPosition(G.playerBody.position.x, G.playerBody.position.y + 25, G.playerBody.position.z);
+    // 自機を確実に非表示にする
+    const myEnt = G.entities.find(e => e.body === G.playerBody);
+    if (myEnt && myEnt.mesh) myEnt.mesh.visible = false;
+    // 古い十字架があれば完全に削除・破棄
+    if (G.crossMesh) {
+        G.scene.remove(G.crossMesh);
+        G.crossMesh.traverse(n => { if (n.geometry) n.geometry.dispose(); });
+        G.crossMesh = null;
     }
-    // 'none': その場に留まる
-
-    // メッシュを十字架に差し替え
-    if (G.playerMesh && G.crossModel && G.scene) {
-        G._savedPlayerMeshVisible = G.playerMesh.visible;
-        G.playerMesh.visible = false; // プレイヤーモデルを非表示にする
-        if (!G._deathCrossMesh) {
-            G._deathCrossMesh = G.crossModel.clone();
-        }
-        G._deathCrossMesh.position.copy(G.playerMesh.position);
-        G.scene.add(G._deathCrossMesh);
-    }
-
-    // K/D同期とメッシュ同期
-    if (G.isOnline) {
-        if (G.isHost) {
-            // ホスト自身が死んだ場合のキル加算
-            if (G.lastDamageSourceId) {
-                const killerStats = G.peerStats.get(G.lastDamageSourceId);
-                if (killerStats) killerStats.kills++;
-                else G.peerStats.set(G.lastDamageSourceId, { kills: 1, deaths: 0 });
-            }
-            const statsObj = {};
-            statsObj[G.myPeerId] = { kills: G.myKills || 0, deaths: G.myDeaths || 0 };
-            G.peerStats.forEach((v, k) => { statsObj[k] = v; });
-            broadcastEvent(31, { stats: statsObj });
-            broadcastEvent(33, { peerId: G.myPeerId, isDead: true });
-        } else {
-            broadcastEvent(30, { peerId: G.myPeerId, deaths: G.myDeaths, kills: G.myKills, killedBy: G.lastDamageSourceId });
-            broadcastEvent(33, { peerId: G.myPeerId, isDead: true });
-        }
-    }
-    G.lastDamageSourceId = null;
+    // 十字架メッシュを新しく生成して配置
+    const crossV = new THREE.CylinderGeometry(0.08, 0.08, 1.8, 6);
+    const crossH = new THREE.CylinderGeometry(0.08, 0.08, 1.0, 6);
+    const crossMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, emissive: 0x888888 });
+    const crossVMesh = new THREE.Mesh(crossV, crossMat);
+    const crossHMesh = new THREE.Mesh(crossH, crossMat);
+    crossHMesh.rotation.z = Math.PI / 2;
+    crossHMesh.position.y = 0.4;
+    G.crossMesh = new THREE.Group();
+    G.crossMesh.add(crossVMesh);
+    G.crossMesh.add(crossHMesh);
+    G.crossMesh.position.set(G.playerBody.position.x, G.playerBody.position.y, G.playerBody.position.z);
+    G.scene.add(G.crossMesh);
 }
 
 function respawnPlayer() {
     G.isDead = false;
     if (G.deathTextEl) G.deathTextEl.style.display = 'none';
-
-    // 十字架を削除、プレイヤーメッシュを復帰
-    if (G._deathCrossMesh && G.scene) {
-        G.scene.remove(G._deathCrossMesh);
+    // 自機を再表示
+    const myEnt = G.entities.find(e => e.body === G.playerBody);
+    if (myEnt && myEnt.mesh) myEnt.mesh.visible = true;
+    // 十字架をシーンから削除し、ジオメトリを破棄
+    if (G.crossMesh && G.scene) {
+        G.scene.remove(G.crossMesh);
+        G.crossMesh.traverse(n => { if (n.geometry) n.geometry.dispose(); });
+        G.crossMesh = null;
     }
-    if (G.playerMesh) {
-        G.playerMesh.visible = true; // プレイヤーモデルを再表示
+    
+    // 復活を通知
+    if (G.isOnline) {
+        broadcastEvent(33, { peerId: G.myPeerId, isDead: false });
     }
 
     // 無敵開始（5秒）
     G.isInvincible = true;
     G.invincibilityTimer = 5.0;
+    if (G.playerBody) {
+        G._savedPlayerLayer = G.playerBody.belongsTo;
+        G.playerBody.belongsTo = 0;   // 全レイヤーとの物理衝突を無効化
+    }
 
     // プレイヤーメッシュを半透明白にする
     if (G.playerMesh) {
@@ -261,6 +292,10 @@ function updateInvincibility(dt) {
     if (G.invincibilityTimer <= 0) {
         G.isInvincible = false;
         G.invincibilityTimer = 0;
+        if (G._savedPlayerLayer !== undefined) {
+            if (G.playerBody) G.playerBody.belongsTo = G._savedPlayerLayer;
+            G._savedPlayerLayer = undefined;
+        }
         // マテリアルを復元
         if (G._savedMaterials) {
             G._savedMaterials.forEach(entry => {
@@ -286,7 +321,7 @@ const UPGRADE_POOLS = {
     projectile: [
         { id: 'p1', name: "マシンガン", desc: "回復速度：とてもはやい\nダメージ：ちいさい", stats: { projectileRecoveryRate: 20.0, damageProjectile: 1, projectileSpeed: 20.0, projectileAutoFire: true, projectileRangeMult: 0.5 } },
         { id: 'p2', name: "ス〇イパー", desc: "弾速：とてもはやい\nダメージ：おおきい", stats: { projectileRecoveryRate: 1.0, damageProjectile: 2, projectileSpeed: 40.0, projectileRangeMult: 2.0 } },
-        { id: 'p3', name: "キャノン", desc: "回復速度：おそい\nダメージ：とてもおおきい", stats: { projectileRecoveryRate: 0.5, damageProjectile: 5, projectileSpeed: 15.0 } },
+        { id: 'p3', name: "キャノン", desc: "右クリックでスコープ\nスコープ中のみ発射可能\nダメージ：とてもおおきい", stats: { projectileRecoveryRate: 0.33, damageProjectile: 5, projectileSpeed: 40.0, projectileRadiusMult: 2.0, projectileRequiresScope: true } },
         { id: 'p4', name: "マガジン", desc: "最大装弾数が\n2発増加する", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 20.0, maxProjectileStock: 4.0 } },
         { id: 'p5', name: "〇ック", desc: "弾のサイズが大きく\nダメージも少し高い", stats: { projectileRecoveryRate: 1.0, damageProjectile: 2, projectileSpeed: 20.0, projectileRadiusMult: 1.6 } },
         { id: 'p6', name: "ジェ〇ニ", desc: "弾が斜め2方向に\n分裂して飛ぶ", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 20.0, projectileSplit: 2 } },
@@ -295,16 +330,16 @@ const UPGRADE_POOLS = {
         { id: 'p9', name: "ニー〇ル", desc: "弾が壁を\n貫通する", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 20.0, projectilePassWall: true, projectileIsNeedle: true } },
         { id: 'p10', name: "ペ〇トレ", desc: "高速の弾が\n壁を貫通する", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 35.0, projectilePassWall: true, projectileIsNeedle: true } },
         { id: 'p11', name: "〇ウンド", desc: "壁で2回まで\n跳ね返る弾", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 20.0, projectileBounces: 2 } },
-        { id: 'p12', name: "〇ング", desc: "弾の射程が\n大幅に伸びる", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 20.0, projectileRangeMult: 3.0 } }
+        { id: 'p12', name: "〇ング", desc: "弾の射程が\n大幅に伸びる", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 20.0, projectileRangeMult: 3.0, projectileRequiresScope: false } }
     ],
     bubble: [
-        { id: 'b1', name: "シャワー", desc: "回復速度：とてもはやい\nダメージ：ちいさい", stats: { bubbleRecoveryRate: 2.5, damageBubble: 1, bubbleSpeedY: 5.0 } },
-        { id: 'b2', name: "ヘビー", desc: "上昇速度：おそい\nダメージ：とてもおおきい", stats: { bubbleRecoveryRate: 1.0, damageBubble: 5, bubbleSpeedY: 2.5 } },
-        { id: 'b3', name: "ロケット", desc: "上昇速度：とてもはやい\nダメージ：ふつう", stats: { bubbleRecoveryRate: 1.0, damageBubble: 2, bubbleSpeedY: 10.0 } },
-        { id: 'b4', name: "スロー", desc: "上昇速度：とてもおそい\nじっくりと浮上", stats: { bubbleRecoveryRate: 1.0, damageBubble: 1, bubbleSpeedY: 1.5 } },
-        { id: 'b5', name: "ツイン", desc: "シャボン玉を\n同時に2発撃つ", stats: { bubbleRecoveryRate: 1.0, damageBubble: 1, bubbleSpeedY: 5.0, bubbleSplit: 2 } },
-        { id: 'b6', name: "ダメージ", desc: "シャボン玉の\nダメージが大幅増加", stats: { bubbleRecoveryRate: 1.0, damageBubble: 3, bubbleSpeedY: 5.0 } },
-        { id: 'b7', name: "クイック", desc: "シャボン玉の\nリロード速度向上", stats: { bubbleRecoveryRate: 3.0, damageBubble: 1, bubbleSpeedY: 5.0 } }
+        { id: 'b1', name: "シャワー", desc: "回復速度：とてもはやい\nダメージ：ちいさい", stats: { bubbleRecoveryRate: 0.45, damageBubble: 1, bubbleSpeedY: 5.0 } },
+        { id: 'b2', name: "ヘビー", desc: "上昇速度：おそい\nダメージ：とてもおおきい", stats: { bubbleRecoveryRate: 0.18, damageBubble: 5, bubbleSpeedY: 2.5 } },
+        { id: 'b3', name: "ロケット", desc: "上昇速度：とてもはやい\nダメージ：ふつう", stats: { bubbleRecoveryRate: 0.18, damageBubble: 2, bubbleSpeedY: 10.0 } },
+        { id: 'b4', name: "スロー", desc: "上昇速度：とてもおそい\nじっくりと浮上", stats: { bubbleRecoveryRate: 0.18, damageBubble: 2, bubbleSpeedY: 1.5 } },
+        { id: 'b5', name: "ツイン", desc: "シャボン玉を\n同時に2発撃つ", stats: { bubbleRecoveryRate: 0.18, damageBubble: 2, bubbleSpeedY: 5.0, bubbleSplit: 2 } },
+        { id: 'b6', name: "ダメージ", desc: "シャボン玉の\nダメージが大幅増加", stats: { bubbleRecoveryRate: 0.18, damageBubble: 4, bubbleSpeedY: 5.0 } },
+        { id: 'b7', name: "クイック", desc: "シャボン玉の\nリロード速度向上", stats: { bubbleRecoveryRate: 0.54, damageBubble: 2, bubbleSpeedY: 5.0 } }
     ]
 };
 
@@ -390,9 +425,10 @@ window.applyUpgrade = function(index) {
             config.projectileRangeMult = 1.0;
             config.projectileAutoFire = false;
             config.projectileIsNeedle = false;
+            config.projectileRequiresScope = false;
         } else if (opt.id.startsWith('b')) {
-            config.bubbleRecoveryRate = 1.0;
-            config.damageBubble = 1;
+            config.bubbleRecoveryRate = 0.18;
+            config.damageBubble = 2;
             config.bubbleSpeedY = 5.0;
             config.maxBubbleStock = 2;
             config.bubbleSplit = 1;

@@ -249,6 +249,12 @@
             <div id="upg-proj">PROJ: ---</div>
             <div id="upg-bubb">BUBB: ---</div>
         </div>
+        <div id="scope-overlay" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:5;">
+            <div style="position:absolute; top:0; bottom:0; left:0; right:0; box-shadow:inset 0 0 100px rgba(0,0,0,0.8);"></div>
+            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:40px; height:40px; border:2px solid rgba(255,0,0,0.6); border-radius:50%;"></div>
+            <div style="position:absolute; top:50%; left:50%; width:60px; height:2px; background:rgba(255,0,0,0.6); transform:translate(-50%, -50%);"></div>
+            <div style="position:absolute; top:50%; left:50%; width:2px; height:60px; background:rgba(255,0,0,0.6); transform:translate(-50%, -50%);"></div>
+        </div>
         <div id="life-display" style="position: absolute; bottom: 30px; right: 30px; font-size: 28px; color: rgba(255, 80, 80, 0.9); text-shadow: 0 0 10px rgba(255, 0, 0, 0.3); letter-spacing: 4px;">♥♥♥</div>
         <div id="tutorial-ui" class="hidden" style="position: absolute; top: 50%; right: 30px; transform: translateY(-50%); background: rgba(0,0,0,0.6); padding: 20px; border-radius: 8px; color: rgba(255,255,255,0.9); font-size: 14px; border: 1px solid rgba(255,255,255,0.2); pointer-events: auto; text-shadow: 1px 1px 2px #000; z-index: 10;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; min-width: 150px;">
@@ -264,8 +270,8 @@
                 <p style="margin-bottom: 8px;"><kbd>赤い膜</kbd>チェックポイント</p>
                 <p style="margin-bottom: 8px;"><kbd>自機が見えない</kbd>オレンジ色で透ける</p>
                 <p style="margin-bottom: 8px;"><kbd>赤しま</kbd>通れない所</p>
-                <p style="margin-bottom: 8px;"><kbd>右クリック / Shift</kbd>弾丸発射</p>
-                <p style="margin-bottom: 8px;"><kbd>B</kbd>シャボン玉</p>
+                <p style="margin-bottom: 8px;"><kbd>右クリック</kbd>弾丸発射</p>
+                <p style="margin-bottom: 8px;"><kbd>B / Q</kbd>シャボン玉</p>
                 <p style="margin-bottom: 8px;"><kbd>Wheel</kbd>拡大縮小 / スコープモード</p>
             </div>
         </div>
@@ -389,7 +395,8 @@
             { key: 'density', label: 'DENSITY', min: 0.03, max: 0.5, step: 0.01, value: 0.16 },
             { key: 'goalHeight', label: 'GOAL HEIGHT', options: [50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000, 1200, 1300, 1400, 1500], value: 400 },
             { key: 'maxLives', label: 'MAX LIVES', min: 1, max: 10, step: 1, value: 3 },
-            { key: 'aiCount', label: 'AI COUNT', min: 0, max: 10, step: 1, value: 0 }
+            { key: 'aiCount', label: 'AI COUNT', min: 0, max: 10, step: 1, value: 0 },
+            { key: '__startGame', label: 'START GAME', type: 'action', action: () => startGame() }
         ];
         let currentSettingIdx = 0;
         let isSettingFocused = false; // 設定項目がフォーカスされているか（W/Sで移動中か）
@@ -701,8 +708,12 @@
             if (!overlay || !input) return;
             if (save) {
                 const val = input.value.trim();
-                G.myPlayerName = val || 'Guest';
+                G.myPlayerName = val || 'GUEST';
             }
+            G.myPlayerName = (G.myPlayerName || '').trim() || 'GUEST';
+            const oldInput = document.getElementById('player-name-input');
+            if (oldInput) oldInput.value = G.myPlayerName;
+            
             overlay.style.display = 'none';
             _onlinePhase = 'menu';
             updateOnlineSettingsUI();
@@ -806,20 +817,24 @@
         function initSettingsUI() {
             const container = document.getElementById('settings-list');
             if (!container) return;
-            container.innerHTML = settingDefs.map((s, idx) => `
-                <div id="setting-row-${idx}" class="setting-row" onmouseenter="setSettingIdx(${idx})" style="cursor: pointer;">
-                    <div class="setting-label-plate">
-                        <span>${s.label}</span>
-                        <div class="setting-arrow-group">
-                            <span class="setting-arrow left-arrow" onclick="event.stopPropagation(); changeSettingValue(-1)">◀</span>
-                            <span class="setting-arrow right-arrow" onclick="event.stopPropagation(); changeSettingValue(1)">▶</span>
-                        </div>
-                    </div>
+            container.innerHTML = settingDefs.map((s, idx) => {
+                const isAction = s.type === 'action';
+                const valHtml = !isAction ? `
                     <div class="setting-value-plate">
                         <span class="setting-value"></span>
+                    </div>` : '';
+                return `
+                <div id="setting-row-${idx}" class="setting-row" onmouseenter="setSettingIdx(${idx})" onclick="${isAction ? `settingDefs[${idx}].action()` : ''}" style="cursor: pointer;">
+                    <div class="setting-label-plate" style="width: ${isAction ? '500px' : '315px'};">
+                        <span style="${isAction ? 'color: #ffaaaa;' : ''}">${s.label}</span>
+                        <div class="setting-arrow-group">
+                            ${!isAction ? `<span class="setting-arrow left-arrow" onclick="event.stopPropagation(); changeSettingValue(-1)">◀</span>` : ''}
+                            <span class="setting-arrow right-arrow" onclick="event.stopPropagation(); ${isAction ? `settingDefs[${idx}].action()` : 'changeSettingValue(1)'}">▶</span>
+                        </div>
                     </div>
+                    ${valHtml}
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         // 状態（クラスや値）のみを更新する（アニメーションを有効にするため）
@@ -839,29 +854,32 @@
                 if (isTabActive) row.classList.add('focused-tab');
                 else row.classList.remove('focused-tab');
 
-                // 値の更新
-                const valEl = row.querySelector('.setting-value');
-                if (valEl) valEl.innerText = s.options ? s.value : s.value.toFixed(s.step < 1 ? 2 : 0);
+                if (s.type !== 'action') {
+                    // 値の更新
+                    const valEl = row.querySelector('.setting-value');
+                    if (valEl) valEl.innerText = s.options ? s.value : s.value.toFixed(s.step < 1 ? 2 : 0);
 
-                // 矢印の暗転
-                let leftDim = false, rightDim = false;
-                if (s.options) {
-                    const cIdx = s.options.indexOf(s.value);
-                    if (cIdx === 0) leftDim = true;
-                    if (cIdx === s.options.length - 1) rightDim = true;
-                } else {
-                    if (s.value <= s.min) leftDim = true;
-                    if (s.value >= s.max) rightDim = true;
+                    // 矢印の暗転
+                    let leftDim = false, rightDim = false;
+                    if (s.options) {
+                        const cIdx = s.options.indexOf(s.value);
+                        if (cIdx === 0) leftDim = true;
+                        if (cIdx >= s.options.length - 1) rightDim = true;
+                    } else {
+                        if (s.value <= s.min) leftDim = true;
+                        if (s.value >= s.max) rightDim = true;
+                    }
+                    const lArr = row.querySelector('.left-arrow');
+                    const rArr = row.querySelector('.right-arrow');
+                    if (lArr) lArr.className = `setting-arrow left-arrow ${leftDim ? 'dimmed' : ''}`;
+                    if (rArr) rArr.className = `setting-arrow right-arrow ${rightDim ? 'dimmed' : ''}`;
                 }
-                const lArrow = row.querySelector('.left-arrow');
-                const rArrow = row.querySelector('.right-arrow');
-                if (lArrow) lArrow.className = `setting-arrow left-arrow ${leftDim ? 'dimmed' : ''}`;
-                if (rArrow) rArrow.className = `setting-arrow right-arrow ${rightDim ? 'dimmed' : ''}`;
             });
         }
 
         function changeSettingValue(dir) {
             const s = settingDefs[currentSettingIdx];
+            if (s.type === 'action') return;
             if (s.options) {
                 let curIdx = s.options.indexOf(s.value);
                 // 一周しないようにクランプ（ dir: -1 または 1 ）
@@ -885,15 +903,24 @@
         initWorker();
 
         // プレイヤー名の自動設定と背景初期化
-        document.addEventListener('DOMContentLoaded', () => {
-            G.myPlayerName = ASCENT_NAMES[Math.floor(Math.random() * ASCENT_NAMES.length)];
+        function initApp() {
+            if (!G.myPlayerName || G.myPlayerName === 'Guest') {
+                G.myPlayerName = ASCENT_NAMES[Math.floor(Math.random() * ASCENT_NAMES.length)];
+            }
             const inp = document.getElementById('player-name-input');
             if (inp) inp.value = G.myPlayerName;
             if (window.startMenuOcean) window.startMenuOcean();
             updateMenuVisual(); // 起動時にパネルの表示状態を同期
             updateSettingsUI();
             updateOnlineSettingsUI();
-        });
+            updateOptionsUI();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
+        }
 
         // Tutorial ボタン
         document.getElementById('btn-tutorial').addEventListener('click', (e) => {
@@ -901,6 +928,7 @@
             if (G.isClientInLobby) { logStatus('ホストのゲーム開始を待っています…'); return; }
             if (G.isOnline && !G.isHost) { logStatus('ホストのゲーム開始を待っています…'); return; }
             if (!G.isStarted) {
+                if (!G.myPlayerName || G.myPlayerName.trim() === '') G.myPlayerName = 'GUEST';
                 // 設定値の同期
                 settingDefs.forEach(s => { config[s.key] = s.value; });
                 config.aiCount = (config.aiCount > 0) ? config.aiCount : false;
@@ -918,15 +946,14 @@
             if (G.controls) G.controls.lock();
         });
 
-        // Main ボタン
-        document.getElementById('btn-main').addEventListener('click', (e) => {
-            e.stopPropagation();
+        function startGame() {
             if (!G.isStarted) {
+                if (!G.myPlayerName || G.myPlayerName.trim() === '') G.myPlayerName = 'GUEST';
                 if (G.isClientInLobby) { logStatus('ホストのゲーム開始を待っています…'); return; }
                 if (G.isOnline && !G.isHost) { logStatus('ホストのゲーム開始を待っています…'); return; }
                 
                 // 設定値の同期
-                settingDefs.forEach(s => { config[s.key] = s.value; });
+                settingDefs.forEach(s => { if (s.type !== 'action') config[s.key] = s.value; });
                 config.aiCount = (config.aiCount > 0) ? config.aiCount : false;
 
                 if (G.isOnline && G.isHost) {
@@ -946,7 +973,7 @@
                 init(); G.startTime = Date.now();
             }
             if (G.controls) G.controls.lock();
-        });
+        }
 
         // マルチプレイボタン（旧UIのリスナー、null-safe化）
         const btnHost = document.getElementById('btn-host');
@@ -1126,6 +1153,10 @@
                 }
             } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
                 if (isSettingFocused) {
+                    if (settingDefs[currentSettingIdx].type === 'action') {
+                        settingDefs[currentSettingIdx].action();
+                        return;
+                    }
                     changeSettingValue(1);
                 } else {
                     currentMenuIdx = (currentMenuIdx + 1) % menuButtons.length;
@@ -1170,6 +1201,10 @@
                     updateOptionsUI();
                 }
             } else if (e.key === 'Enter' || e.key === ' ') {
+                if (isSettingFocused && settingDefs[currentSettingIdx].type === 'action') {
+                    settingDefs[currentSettingIdx].action();
+                    return;
+                }
                 const btn = menuButtons[currentMenuIdx];
                 if (btn && !btn.disabled) btn.click();
             }

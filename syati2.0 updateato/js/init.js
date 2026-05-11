@@ -25,8 +25,8 @@ function resetConfigToDefaults() {
     config.projectileIsNeedle = false;
 
     // bubble カテゴリのデフォルト値
-    config.bubbleRecoveryRate = 1.0;
-    config.damageBubble = 1;
+    config.bubbleRecoveryRate = 0.18;
+    config.damageBubble = 2;
     config.bubbleSpeedY = 5.0;
     config.maxBubbleStock = 2;
     config.bubbleSplit = 1;

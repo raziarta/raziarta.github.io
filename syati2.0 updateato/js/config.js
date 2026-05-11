@@ -18,7 +18,7 @@ const config = {
     goalHeight: 400,
     maxLives: 3,
     damageProjectile: 1,
-    damageBubble: 1,
+    damageBubble: 2,
     aiDamageFactor: 1.0,
     aiCount: 0,
     birdSpawnInterval: 30000,
@@ -29,7 +29,7 @@ const config = {
     // Bubble Stats
     maxBubbleStock: 2,
     bubbleSpeedY: 5.0,
-    bubbleRecoveryRate: 1.0,
+    bubbleRecoveryRate: 0.18,
     projectileAutoFire: false,
     brightness: 0.46,
     deathFallMode: '50' // 'none', '25', '50'

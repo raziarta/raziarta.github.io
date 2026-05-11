@@ -79,7 +79,7 @@ function createPlayer(entIndex = 0) {
     G.scene.add(G.playerMesh);
 
     G.entities.push({
-        name: 'Player',
+        name: G.myPlayerName || G.myPeerId || 'GUEST',
         body: G.playerBody,
         mesh: G.playerMesh,
         isAI: false,
@@ -133,6 +133,16 @@ function setupControls() {
         if (e.button === 2 && G.controls.isLocked) {
             G.keys.rightClick = true;
             if (!document.getElementById('reward-screen').classList.contains('hidden')) return;
+
+            if (config.projectileRequiresScope && !G.isScopedIn) {
+                G.isScopedIn = true;
+                G.camera.fov = 30;
+                G.camera.updateProjectionMatrix();
+                const overlay = document.getElementById('scope-overlay');
+                if (overlay) overlay.style.display = 'block';
+                return; // スコープインするだけで発射しない
+            }
+
             const now = Date.now();
             const projCooldown = 500 / (config.projectileRecoveryRate || 1);
             if (now - G.lastFireTimeProjectile >= projCooldown && G.playerProjectileStock >= 1.0) {
@@ -152,32 +162,24 @@ function setupControls() {
     });
 
     window.addEventListener('keydown', (e) => {
+        if (!G.isStarted) return;
         if (e.code === 'KeyW') G.keys.w = true;
         if (e.code === 'KeyA') G.keys.a = true;
         if (e.code === 'KeyS') G.keys.s = true;
         if (e.code === 'KeyD') G.keys.d = true;
         if (e.code === 'Space') { e.preventDefault(); G.keys.space = true; }
-        if ((e.code === 'ShiftLeft' || e.code === 'ShiftRight') && G.controls.isLocked) {
-            G.keys.shift = true;
-            if (!document.getElementById('reward-screen').classList.contains('hidden')) return;
-            const now = Date.now();
-            const projCooldown = 500 / (config.projectileRecoveryRate || 1);
-            if (now - G.lastFireTimeProjectile >= projCooldown && G.playerProjectileStock >= 1.0) {
-                G.lastFireTimeProjectile = now;
-                G.playerProjectileStock -= 1.0;
-                updateAmmoHUD();
-                requestFire(0);
-            }
-        }
-        if (e.code === 'KeyB' && G.controls.isLocked) {
-            if (!document.getElementById('reward-screen').classList.contains('hidden')) return;
-            const now = Date.now();
-            const bubbleCooldown = 500 / (config.bubbleRecoveryRate || 1); // 連射可能にする（500ms）
-            if (now - G.lastFireTimeBubble >= bubbleCooldown && G.playerBubbleStock >= 1.0) {
-                G.lastFireTimeBubble = now;
-                G.playerBubbleStock -= 1.0;
-                updateAmmoHUD();
-                requestFire(1);
+        
+        if (G.controls.isLocked) {
+            if (e.key === 'b' || e.key === 'B' || e.key === 'q' || e.key === 'Q') {
+                if (!document.getElementById('reward-screen').classList.contains('hidden')) return;
+                const now = Date.now();
+                const bubbleCooldown = 500 / (config.bubbleRecoveryRate || 1);
+                if (now - G.lastFireTimeBubble >= bubbleCooldown && G.playerBubbleStock >= 1.0) {
+                    G.lastFireTimeBubble = now;
+                    G.playerBubbleStock -= 1.0;
+                    updateAmmoHUD();
+                    requestFire(1);
+                }
             }
         }
     });

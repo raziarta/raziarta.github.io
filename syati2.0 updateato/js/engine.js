@@ -74,7 +74,8 @@ function updateFixedLogic(dt) {
 
                         b._hitFlag = true;
                         b._hitBody = other;
-                        // AI判定
+
+                        // 1. AI判定
                         G.entities.forEach(ent => {
                             if (ent.isAI && ent.body === other) {
                                 const bDamage = b.props ? b.props.damage : config.damageBubble;
@@ -85,19 +86,16 @@ function updateFixedLogic(dt) {
                                     ent.body.resetPosition(config.areaSize/2, Math.max(0, Math.floor((ch-1)/100)*100) + 2.0, config.areaSize/2);
                                     ent.body.linearVelocity.set(0,0,0); ent.lives = config.maxLives;
                                 }
-                            } else if (other === G.playerBody) {
-                                takeDamage(b.props ? b.props.damage : config.damageBubble, b.ownerId || resolveName(b.ownerBody));
                             }
                         });
-                        // ネットワークプレイヤー判定（ホスト側のみ）
-                        if (G.isHost && G.isOnline) {
-                            for (const [peerId, netEnt] of G.networkEntities) {
-                                if (netEnt.body === other) {
-                                    const bDmg = b.props ? b.props.damage : config.damageBubble;
-                                    break;
-                                }
-                            }
+
+                        // 2. 自機判定
+                        if (other === G.playerBody) {
+                            takeDamage(b.props ? b.props.damage : config.damageBubble, b.ownerId || resolveName(b.ownerBody));
                         }
+
+                        // 3. ネットワークプレイヤー判定
+                        // ホスト側の処理（combat.js の updateSoapBubbles で行われるが、ヒットフラグを立てることで確実に検知させる）
                         break;
                     }
                 }
@@ -357,7 +355,7 @@ function updateFixedLogic(dt) {
             }
         });
     }
-    updateSoapBubbles();
+    updateSoapBubbles(dt);
 
     // ホスト権威同期（20fps = 3フレームに1回、弾丸+シャボン両方）
     if (G.isHost&&G.isStarted) {
@@ -394,8 +392,8 @@ function updateFixedLogic(dt) {
         else G.deathTextEl.innerText='YOU DIED\n'+Math.ceil(G.deathTimer);
         G.playerBody.linearVelocity.set(0,0,0);
         // 十字架をプレイヤー座標に追従
-        if (G._deathCrossMesh) {
-            G._deathCrossMesh.position.set(pos.x, pos.y, pos.z);
+        if (G.crossMesh) {
+            G.crossMesh.position.set(pos.x, pos.y, pos.z);
         }
     }
 
@@ -458,8 +456,14 @@ function renderVisuals(dt) {
         if (t > 0.8) hidePlayer = true;
     }
 
-    if (G.playerMesh) {
-        G.playerMesh.visible = !hidePlayer;
+    // 自機（プレイヤー）の表示制御
+    const myEnt = G.entities[0];
+    if (myEnt && myEnt.mesh) {
+        if (G.isDead) {
+            myEnt.mesh.visible = false;
+        } else {
+            myEnt.mesh.visible = !hidePlayer;
+        }
     }
     
     // FOVの滑らかな補間
@@ -490,20 +494,35 @@ function renderVisuals(dt) {
     let listHtml = G.entities.map(e=>{
         const h = Math.max(0,Math.floor(e.body.position.y));
         const nameColor = e.isAI ? '#90ee90' : '#64b4ff';
-        let res = `<span style="color:${nameColor}">${e.name}</span>: ${h}m`;
+        const displayName = e.isAI ? e.name : (G.myPlayerName || G.myPeerId || 'GUEST');
+        let res = `<span style="color:${nameColor}">${displayName}</span>: ${h}m`;
         // 自分のK/D
         if (!e.isAI) {
-            res += `<br><span style="color:#94a3b8;font-size:10px">K:${G.myKills} D:${G.myDeaths}</span>`;
+            const stats = (G.peerStats && G.myPeerId) ? G.peerStats.get(G.myPeerId) : null;
+            const k = stats ? stats.kills : G.myKills;
+            const d = stats ? stats.deaths : G.myDeaths;
+            res += `<br><span style="color:#94a3b8;font-size:10px">K:${k} D:${d}</span>`;
         }
         return res;
     }).join('<br>');
     G.networkEntities.forEach(ent => {
-        const name=ent.name||(ent.id.startsWith('AI_')?'RIVAL AI':'Player');
+        const name=ent.name||(ent.id.startsWith('AI_')?'RIVAL AI':'GUEST');
         const h = Math.max(0,Math.floor(ent.mesh.position.y));
         const stats = G.peerStats.get(ent.id);
         const kd = stats ? `<br><span style="color:#94a3b8;font-size:10px">K:${stats.kills} D:${stats.deaths}</span>` : '';
         const nameColor = ent.id.startsWith('AI_') ? '#90ee90' : '#ffaa33';
         listHtml += `<br><span style="color:${nameColor}">${name}</span>: ${h}m${kd}`;
+
+        // 通信相手の死亡状態に応じた表示の切り替え
+        if (ent.mesh) {
+            ent.mesh.visible = !ent.isDead;
+            if (ent._deathCrossMesh) {
+                ent._deathCrossMesh.visible = !!ent.isDead;
+                if (ent.isDead) {
+                    ent._deathCrossMesh.position.lerp(ent.mesh.position, 0.2);
+                }
+            }
+        }
     });
     if (G.entityListEl) G.entityListEl.innerHTML = listHtml;
 

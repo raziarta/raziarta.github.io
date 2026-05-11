@@ -23,7 +23,7 @@ function packData(eventId, data) {
         return [10, data.type, 
             Math.round(data.x*100)/100, Math.round(data.y*100)/100, Math.round(data.z*100)/100, 
             Math.round(data.vx*100)/100, Math.round(data.vy*100)/100, Math.round(data.vz*100)/100, 
-            packedProps];
+            packedProps, data.ownerName || null];
     }
     if (eventId === 11) {
         const p = data.props;
@@ -51,10 +51,14 @@ function packData(eventId, data) {
             data.attackerId || null];
     }
     if (eventId === 22) {
+        // [UPDATED] Stats Sync Events
         return { event: 22 };
     }
+    if (eventId === 33) {
+        return { event: 33, peerId: data.peerId, isDead: data.isDead };
+    }
     if (eventId === 30) {
-        return { event: 30, peerId: data.peerId, deaths: data.deaths, kills: data.kills, killedBy: data.killedBy };
+        return { event: 30, peerId: data.peerId, deaths: data.deaths, killedBy: data.killedBy || null };
     }
     if (eventId === 31) {
         return { event: 31, stats: data.stats };
@@ -62,20 +66,21 @@ function packData(eventId, data) {
     if (eventId === 32) {
         return { event: 32, peerId: data.peerId, invincible: data.invincible };
     }
-    if (eventId === 33) {
-        return { event: 33, peerId: data.peerId, isDead: data.isDead };
-    }
 }
 
 function unpackData(arr) {
-    if (arr.event === 0 || arr.event === 5 || arr.event === 6 || arr.event === 20 || arr.event === 22 || arr.event === 30 || arr.event === 31 || arr.event === 32 || arr.event === 33) return arr;
+    if (!arr) return null;
+    if (arr.event === 0 || arr.event === 5 || arr.event === 6 ||
+        arr.event === 20 || arr.event === 22 ||
+        arr.event === 30 || arr.event === 31 || arr.event === 32 || arr.event === 33) return arr;
+
     if (Array.isArray(arr)) {
         const ev = arr[0];
         if (ev === 1) return { event: 1, id: arr[1], x: arr[2], y: arr[3], z: arr[4], jumps: arr[5] };
         if (ev === 10) {
             const pp = arr[8], type = arr[1];
             const props = pp ? (type === 1 ? { damage: pp[0] } : { radiusMult: pp[0], passWall: !!pp[1], bounces: pp[2], rangeMult: pp[3], damage: pp[4], isNeedle: !!pp[5], speed: pp[6] }) : null;
-            return { event: 10, type, x: arr[2], y: arr[3], z: arr[4], vx: arr[5], vy: arr[6], vz: arr[7], props };
+            return { event: 10, type, x: arr[2], y: arr[3], z: arr[4], vx: arr[5], vy: arr[6], vz: arr[7], props, ownerName: arr[9] || null };
         }
         if (ev === 11) {
             const pp = arr[9], type = arr[2];
@@ -109,7 +114,7 @@ function sendToClient(peerId, eventId, rawData) {
 }
 
 const PEER_OPTIONS = {
-    debug: 3,
+    debug: 1, // エラーのみ表示 (3は詳細ログすぎてコンソールが埋まるため)
     secure: true,
     config: {
         iceServers: [
@@ -302,9 +307,11 @@ function enterClientLobby() {
     const screenTitle = document.querySelector('.screen-title');
     if (screenTitle) screenTitle.textContent = '■ CLIENT MODE';
 
-    // Exit Lobbyボタンを表示
     const exitBtn = document.getElementById('btn-exit-lobby');
     if (exitBtn) exitBtn.style.display = 'block';
+    
+    const listEl = document.getElementById('lobby-player-list');
+    if (listEl) listEl.style.display = 'block';
 }
 
 function exitClientLobby() {
@@ -378,12 +385,29 @@ function handleNetworkData(rawData, sourceConn) {
             broadcastEvent(5, data);
             updateLobbyPlayerList();
 
+            const lobbyList = [];
+            lobbyList.push({ id: G.myPeerId, name: G.myPlayerName, isHost: true });
+            G.peerNames.forEach((name, id) => lobbyList.push({ id, name, isHost: false }));
+            broadcastEvent(25, { list: lobbyList });
+
             G.projectiles.forEach(p => {
                 if (p.netId != null) broadcastEvent(11, { netId: p.netId, type: 0, x: p.position.x, y: p.position.y, z: p.position.z, vx: p.velocity.x, vy: p.velocity.y, vz: p.velocity.z, props: p.props, ownerName: resolveName(p.ownerBody) });
             });
             G.bubbles.forEach(b => {
                 if (b.netId != null && b.body) broadcastEvent(11, { netId: b.netId, type: 1, x: b.body.position.x, y: b.body.position.y, z: b.body.position.z, vx: b.body.linearVelocity.x, vy: b.body.linearVelocity.y, vz: b.body.linearVelocity.z, props: b.props, ownerName: b.ownerId });
             });
+        }
+    } else if (data.event === 25) {
+        if (!G.isHost) {
+            const listEl = document.getElementById('lobby-player-list');
+            if (!listEl) return;
+            const names = data.list.map(p =>
+                p.isHost
+                ? `<span style="color:#0ea5e9; font-weight:bold;">★ ${p.name} (HOST)</span>`
+                : `<span style="color:#334155;">● ${p.name}${p.id === G.myPeerId ? ' (YOU)' : ''}</span>`
+            );
+            listEl.innerHTML = `<div style="font-size:10px;font-weight:800;color:#666;letter-spacing:2px;margin-bottom:6px;">▸ PLAYERS IN LOBBY</div>` + names.join('<br>');
+            listEl.style.display = 'block';
         }
     } else if (data.event === 6) {
         if (!G.isHost && !G.isStarted) {
@@ -419,18 +443,40 @@ function handleNetworkData(rawData, sourceConn) {
     } else if (data.event === 10) {
         if (G.isHost) {
             let reqOwnerBody = null;
+            let reqOwnerId = null;
             if (sourceConn) {
-                const ent = G.networkEntities.get(sourceConn.peer);
+                reqOwnerId = sourceConn.peer;
+                const ent = G.networkEntities.get(reqOwnerId);
                 if (ent) reqOwnerBody = ent.body;
             }
-            if (data.type === 0) fireProjectile(data.x, data.y, data.z, data.vx, data.vy, data.vz, reqOwnerBody, null, data.props);
-            else createBubble(data.x, data.y, data.z, data.vx, data.vy, data.vz, reqOwnerBody, null, null, data.props);
+            if (data.type === 0) {
+                const p = fireProjectile(data.x, data.y, data.z, data.vx, data.vy, data.vz, reqOwnerBody, null, data.props);
+                if (p) p.ownerId = reqOwnerId; // 直接IDを紐付け
+            } else {
+                createBubble(data.x, data.y, data.z, data.vx, data.vy, data.vz, reqOwnerBody, null, reqOwnerId, data.props);
+            }
         }
     } else if (data.event === 11) {
         if (!G.isHost) {
             const myId = G.myPeerId ? String(G.myPeerId).trim() : "";
             const ownId = data.ownerName ? String(data.ownerName).trim() : "";
-            if (myId && ownId === myId) return;
+            if (myId && ownId === myId) {
+                // 自分自身の出した弾/泡なら、ローカルで生成済みのものに netId を紐付ける
+                if (data.type === 0) {
+                    const p = G.projectiles.find(p => p.ownerBody === G.playerBody && p.netId == null);
+                    if (p) {
+                        p.netId = data.netId;
+                        if (p.netId != null) G.netObjects.set(p.netId, p.mesh);
+                    }
+                } else {
+                    const b = G.bubbles.find(b => b.ownerBody === G.playerBody && b.netId == null);
+                    if (b) {
+                        b.netId = data.netId;
+                        if (b.netId != null) G.netObjects.set(b.netId, b.mesh);
+                    }
+                }
+                return;
+            }
 
             if (data.type === 0) {
                 fireProjectile(data.x, data.y, data.z, data.vx, data.vy, data.vz, resolveBody(data.ownerName), data.netId, data.props);
@@ -506,7 +552,9 @@ function handleNetworkData(rawData, sourceConn) {
             const myId = G.myPeerId ? String(G.myPeerId).trim() : "";
             const targetId = data.targetPeerId ? String(data.targetPeerId).trim() : "";
             if (myId && targetId === myId) {
-                takeDamage(data.damage, data.attackerId);
+                if (G.isInvincible) return;   // ← 追加：無敵中はノックバックもダメージも無視
+                G.lastDamageSourceId = data.attackerId;
+                takeDamage(data.damage);
                 if (G.playerBody) {
                     G.playerBody.linearVelocity.x += data.kbx;
                     G.playerBody.linearVelocity.y += data.kby;
@@ -531,28 +579,47 @@ function handleNetworkData(rawData, sourceConn) {
             logStatus("ホストがロビーを解散しました");
         }
     } else if (data.event === 30) {
-        // K/D統計の受信（クライアント→ホスト）
+        // [UPDATED] Stats Processing
+        // クライアントが死亡を通知 → ホストがキル加算してから全員にブロードキャスト
+        console.log(`[DEBUG] Host received Event 30 from ${data.peerId}. KilledBy: ${data.killedBy}`);
         if (G.isHost) {
-            G.peerStats.set(data.peerId, { kills: data.kills || 0, deaths: data.deaths || 0 });
-            if (data.killedBy) {
-                const killerStats = G.peerStats.get(data.killedBy);
-                if (killerStats) killerStats.kills++;
-                else if (data.killedBy === G.myPeerId) G.myKills++;
-                else G.peerStats.set(data.killedBy, { kills: 1, deaths: 0 });
+            if (!G.peerStats) G.peerStats = new Map();
+
+            // デス加算
+            if (!G.peerStats.has(data.peerId)) {
+                G.peerStats.set(data.peerId, { kills: 0, deaths: 0 });
             }
-            // 全クライアントにスナップショットをブロードキャスト
+            G.peerStats.get(data.peerId).deaths = data.deaths;
+
+            // キル加算（killedBy がホスト自身でも他クライアントでも同じ処理）
+            if (data.killedBy) {
+                if (!G.peerStats.has(data.killedBy)) {
+                    G.peerStats.set(data.killedBy, { kills: 0, deaths: 0 });
+                }
+                G.peerStats.get(data.killedBy).kills++;
+            }
+
+            // 全員に最新 stats をブロードキャスト（ホスト自身も更新）
             const statsObj = {};
-            // ホスト自身のスタッツ
-            statsObj[G.myPeerId] = { kills: G.myKills || 0, deaths: G.myDeaths || 0 };
-            G.peerStats.forEach((v, k) => { statsObj[k] = v; });
+            G.peerStats.forEach((v, k) => { 
+                statsObj[k] = { 
+                    kills: v.kills || 0, 
+                    deaths: v.deaths || 0 
+                }; 
+            });
             broadcastEvent(31, { stats: statsObj });
+            // ホスト自身の画面も更新
+            if (typeof updateScoreboard === 'function') updateScoreboard();
         }
     } else if (data.event === 31) {
-        // スコアボードスナップショット（ホスト→全クライアント）
-        if (!G.isHost && data.stats) {
-            for (const [pid, s] of Object.entries(data.stats)) {
-                G.peerStats.set(pid, { kills: s.kills || 0, deaths: s.deaths || 0 });
+        // ホストからの stats 全体更新（クライアント側で受け取る）
+        console.log(`[DEBUG] Client received Event 31 (Stats Update)`);
+        if (!G.isHost) {
+            if (!G.peerStats) G.peerStats = new Map();
+            if (data.stats) {
+                Object.entries(data.stats).forEach(([k, v]) => G.peerStats.set(k, v));
             }
+            if (typeof updateScoreboard === 'function') updateScoreboard();
         }
     } else if (data.event === 32) {
         // 無敵状態の同期
@@ -565,9 +632,11 @@ function handleNetworkData(rawData, sourceConn) {
                         if (n.isMesh) {
                             if (!n._origMaterial) n._origMaterial = n.material;
                             n.material = n.material.clone();
-                            n.material.color.set(0xffffff);
-                            n.material.emissive.set(0xffffff);
-                            n.material.emissiveIntensity = 1.0;
+                            if (n.material.color) n.material.color.set(0xffffff);
+                            if (n.material.emissive) {
+                                n.material.emissive.set(0xffffff);
+                                n.material.emissiveIntensity = 1.0;
+                            }
                         }
                     });
                 } else {
@@ -578,6 +647,15 @@ function handleNetworkData(rawData, sourceConn) {
                         }
                     });
                 }
+            }
+        }
+        if (G.isHost && ent && ent.body) {
+            if (data.invincible) {
+                ent._savedLayer = ent.body.belongsTo;
+                ent.body.belongsTo = 0;
+            } else if (ent._savedLayer !== undefined) {
+                ent.body.belongsTo = ent._savedLayer;
+                ent._savedLayer = undefined;
             }
         }
         // ホストなら他のクライアントにも転送
@@ -591,11 +669,26 @@ function handleNetworkData(rawData, sourceConn) {
     } else if (data.event === 33) {
         // 死亡状態（十字架メッシュの切り替え）同期
         const ent = G.networkEntities.get(data.peerId);
-        if (ent && G.crossModel && G.scene) {
+        if (ent && G.scene) {
+            ent.isDead = data.isDead;
             if (data.isDead) {
                 if (ent.mesh) ent.mesh.visible = false;
                 if (!ent._deathCrossMesh) {
-                    ent._deathCrossMesh = G.crossModel.clone();
+                    if (G.crossModel) {
+                        ent._deathCrossMesh = G.crossModel.clone();
+                    } else {
+                        // ジオメトリから十字架を組み立てる
+                        const crossV = new THREE.CylinderGeometry(0.08, 0.08, 1.8, 6);
+                        const crossH = new THREE.CylinderGeometry(0.08, 0.08, 1.0, 6);
+                        const crossMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, emissive: 0x888888 });
+                        const vMesh = new THREE.Mesh(crossV, crossMat);
+                        const hMesh = new THREE.Mesh(crossH, crossMat);
+                        hMesh.rotation.z = Math.PI / 2;
+                        hMesh.position.y = 0.4;
+                        ent._deathCrossMesh = new THREE.Group();
+                        ent._deathCrossMesh.add(vMesh);
+                        ent._deathCrossMesh.add(hMesh);
+                    }
                 }
                 ent._deathCrossMesh.position.copy(ent.mesh.position);
                 G.scene.add(ent._deathCrossMesh);
@@ -603,6 +696,8 @@ function handleNetworkData(rawData, sourceConn) {
                 if (ent.mesh) ent.mesh.visible = true;
                 if (ent._deathCrossMesh) {
                     G.scene.remove(ent._deathCrossMesh);
+                    ent._deathCrossMesh.traverse(n => { if (n.geometry) n.geometry.dispose(); });
+                    ent._deathCrossMesh = null;
                 }
             }
         }
@@ -643,7 +738,7 @@ function updateNetworkEntity(data, conn = null) {
     ent.jumpCount = data.jumps;
 
     if (G.isHost && ent.body && G.world) {
-        ent.body.position.set(data.x, data.y, data.z);
+        ent.body.resetPosition(data.x, data.y, data.z);
         ent.body.linearVelocity.set(0, 0, 0);
     }
 }

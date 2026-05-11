@@ -6,6 +6,18 @@
 function requestFire(type) {
     if (!G.isStarted || G.isDead) return;
 
+    // スコープ必須モードのとき、スコープ中でなければ発射しない
+    if (type === 0 && config.projectileRequiresScope && !G.isScopedIn) return;
+    
+    // 発射後スコープを自動解除
+    if (type === 0 && config.projectileRequiresScope) {
+        G.isScopedIn = false;
+        G.camera.fov = 75;
+        G.camera.updateProjectionMatrix();
+        const overlay = document.getElementById('scope-overlay');
+        if (overlay) overlay.style.display = 'none';
+    }
+
     const startPos = G.playerBody.position.clone();
     const camDir = new THREE.Vector3();
     G.camera.getWorldDirection(camDir);
@@ -132,6 +144,8 @@ function fireProjectile(startX, startY, startZ, velX, velY, velZ, owner = null, 
         velocity: new THREE.Vector3(velX, velY, velZ),
         spawnTime: Date.now(),
         ownerBody: owner,
+        ownerId: resolvePeerId(owner),   // [UPDATED] Use ID for tracking
+        ownerName: resolveName(owner),
         netId: netId,
         _hitFlag: false,
         _hitBody: null,
@@ -147,12 +161,21 @@ function fireProjectile(startX, startY, startZ, velX, velY, velZ, owner = null, 
         const ownerName = resolveName(owner);
         broadcastEvent(11, { netId, type: 0, x: startX, y: startY, z: startZ, vx: velX, vy: velY, vz: velZ, ownerName, props: pProps });
     }
+    return p;
 }
 
 function resolveName(body) {
-    if (body === G.playerBody) return G.myPeerId;
+    if (body === G.playerBody) return G.myPlayerName || G.myPeerId || 'GUEST';
     const ent = G.entities.find(e => e.body === body);
     if (ent) return ent.name;
+    for (const [id, netEnt] of G.networkEntities) {
+        if (netEnt.body === body) return G.peerNames.get(id) || id;
+    }
+    return null;
+}
+
+function resolvePeerId(body) {
+    if (body === G.playerBody) return G.myPeerId;
     for (const [id, netEnt] of G.networkEntities) {
         if (netEnt.body === body) return id;
     }
@@ -201,14 +224,16 @@ function createBubble(startX, startY, startZ, velX, velY, velZ, owner = null, re
         body.linearVelocity.set(velX, velY, velZ);
     }
 
-    const finalOwnerId = ownerNameFromEvent || resolveName(owner);
+    const finalOwnerId = ownerNameFromEvent || resolvePeerId(owner);
     G.bubbles.push({
         body,
         mesh,
         spawnY: startY,
+        velY: velY,
         netId,
         ownerBody: owner,
         ownerId: finalOwnerId,
+        ownerName: resolveName(owner),
         spawnTime: Date.now(),
         props: pProps
     });
@@ -303,7 +328,7 @@ function createExplosion(x, y, z) {
     G.explosions.push({ mesh, scale: 1, life: 1.0, driftY: -0.1 });
 }
 
-function updateSoapBubbles() {
+function updateSoapBubbles(dt = 0.016) {
     for (let i = G.bubbles.length - 1; i >= 0; i--) {
         const b = G.bubbles[i];
 
@@ -311,6 +336,9 @@ function updateSoapBubbles() {
         if (b.body) {
             const pos = b.body.position;
             b.mesh.position.set(pos.x, pos.y, pos.z);
+        } else if (G.isOnline && !G.isHost) {
+            // クライアント側での簡易予測移動 (5割程度の速度)
+            b.mesh.position.y += (b.velY || 0) * dt * 0.5;
         }
 
         // ヒット対象が無敵かどうかチェック
@@ -324,6 +352,9 @@ function updateSoapBubbles() {
                 b._hitFlag = false; // ヒットをキャンセルしてすり抜ける
                 b._hitBody = null;
             }
+            if (b._hitFlag && b._hitBody === G.playerBody) {
+                G.lastDamageSourceId = b.ownerId;
+            }
         }
 
         const exploded = b._hitFlag || false;
@@ -333,27 +364,36 @@ function updateSoapBubbles() {
 
         if (exploded || tooHigh || tooOld) {
             if (exploded && b._hitBody && (G.isHost || !G.isOnline)) {
-                const px = b.body ? b.body.position.x : b.mesh.position.x;
-                const py = b.body ? b.body.position.y : b.mesh.position.y;
-                const pz = b.body ? b.body.position.z : b.mesh.position.z;
-                const dx = b._hitBody.position.x - px;
-                const dy = b._hitBody.position.y - py;
-                const dz = b._hitBody.position.z - pz;
-                const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
-                const kbx = (dx / dist) * 22;
-                const kby = -20;
-                const kbz = (dz / dist) * 22;
-                b._hitBody.linearVelocity.x += kbx;
-                b._hitBody.linearVelocity.y += kby;
-                b._hitBody.linearVelocity.z += kbz;
+                // ヒット対象が無敵かどうかチェック
+                let targetInvincible = false;
+                if (b._hitBody === G.playerBody && G.isInvincible) targetInvincible = true;
+                for (const [pid, netEnt] of G.networkEntities) {
+                    if (b._hitBody === netEnt.body && netEnt.isInvincible) { targetInvincible = true; break; }
+                }
 
-                // ホスト: ネットワークプレイヤーにダメージ＋ノックバックを送信
-                if (G.isHost && G.isOnline) {
-                    const bDmg = b.props ? b.props.damage : config.damageBubble;
-                    for (const [peerId, netEnt] of G.networkEntities) {
-                        if (netEnt.body === b._hitBody) {
-                            sendToClient(peerId, 21, { targetPeerId: peerId, damage: bDmg, kbx, kby, kbz, attackerId: b.ownerId });
-                            break;
+                if (!targetInvincible) {
+                    const px = b.body ? b.body.position.x : b.mesh.position.x;
+                    const py = b.body ? b.body.position.y : b.mesh.position.y;
+                    const pz = b.body ? b.body.position.z : b.mesh.position.z;
+                    const dx = b._hitBody.position.x - px;
+                    const dy = b._hitBody.position.y - py;
+                    const dz = b._hitBody.position.z - pz;
+                    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+                    const kbx = (dx / dist) * 22;
+                    const kby = -20;
+                    const kbz = (dz / dist) * 22;
+                    b._hitBody.linearVelocity.x += kbx;
+                    b._hitBody.linearVelocity.y += kby;
+                    b._hitBody.linearVelocity.z += kbz;
+
+                    // ホスト: ネットワークプレイヤーにダメージ＋ノックバックを送信
+                    if (G.isHost && G.isOnline) {
+                        const bDmg = b.props ? b.props.damage : config.damageBubble;
+                        for (const [peerId, netEnt] of G.networkEntities) {
+                            if (netEnt.body === b._hitBody) {
+                                sendToClient(peerId, 21, { targetPeerId: peerId, damage: bDmg, kbx, kby, kbz, attackerId: b.ownerId });
+                                break;
+                            }
                         }
                     }
                 }

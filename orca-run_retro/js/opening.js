@@ -58,8 +58,9 @@ const Opening = {
       tex.wrapS = THREE.RepeatWrapping;
       tex.wrapT = THREE.RepeatWrapping;
     };
-    this.textures.grass = loader.load('assets/opening/tex_grass_seamless_pixel.png', pixelate);
-    this.textures.stone = loader.load('assets/opening/tex_stone_cliff_pixel.png', pixelate);
+    // Fallback to existing textures to avoid 404
+    this.textures.grass = loader.load('assets/opening/tex_leaf.png', pixelate); 
+    this.textures.stone = loader.load('assets/opening/tex_rock.png', pixelate); 
     this.textures.logo = loader.load('assets/sprites/player/orca_stand.png', pixelate);
     this.textures.eye = loader.load('assets/opening/eye.png', pixelate);
     this.textures.building = loader.load('assets/opening/tex_building.png', pixelate);
@@ -152,8 +153,8 @@ const Opening = {
       return true;
     };
 
-    const grassTex = this.textures.grass;
-    if (grassTex) { grassTex.repeat.set(100, 100); grassTex.wrapS = grassTex.wrapT = THREE.RepeatWrapping; }
+    const groundTex = this.textures.stone.clone();
+    if (groundTex) { groundTex.repeat.set(80, 80); groundTex.wrapS = groundTex.wrapT = THREE.RepeatWrapping; }
     const terrainGeo = new THREE.PlaneGeometry(8000, 8000, 80, 80);
     const posAttr = terrainGeo.attributes.position;
     for (let i = 0; i < posAttr.count; i++) {
@@ -164,7 +165,7 @@ const Opening = {
       posAttr.setZ(i, h);
     }
     terrainGeo.computeVertexNormals();
-    const terrain = new THREE.Mesh(terrainGeo, new THREE.MeshLambertMaterial({ map: grassTex, side: THREE.DoubleSide }));
+    const terrain = new THREE.Mesh(terrainGeo, new THREE.MeshLambertMaterial({ map: groundTex, side: THREE.DoubleSide }));
     terrain.rotation.x = -Math.PI / 2;
     this.scene.add(terrain);
 
@@ -245,13 +246,13 @@ const Opening = {
         this.scene.background.lerp(new THREE.Color(0x000000), fade);
         if (this.scene.fog) this.scene.fog.color.lerp(new THREE.Color(0x000000), fade);
 
-        if (diveTime > 2.0 && diveTime <= 3.0) {
+        if (diveTime > 4.0 && diveTime <= 5.0) {
           this.diamondSprite.material.opacity = 1.0;
         } else {
           this.diamondSprite.material.opacity = 0;
         }
         
-        if (diveTime >= 5.0) {
+        if (diveTime >= 7.0) {
           this.phase = 'logo'; this.timer = 0; this.active = false;
           if (typeof AudioManager !== 'undefined') { AudioManager.stopWindLoop(); AudioManager.playWindGust(); }
         }

@@ -907,7 +907,7 @@ const Game = {
         this.player.qModeUnlocked = true;
         this.announcementQueue.push({ 
           title: "Qmode が解放されました", 
-          desc: "Qmode:Qボタンを押すことで、ジャンプ中に A or D キーで方向転換が可能になります" 
+          desc: "Qmode:QキーでON/OFF。ONの時は、空中で反対方向へ移動入力すると向きを変えられます" 
         });
       }
     }

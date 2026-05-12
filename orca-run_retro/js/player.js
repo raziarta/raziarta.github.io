@@ -102,8 +102,6 @@ class Player {
         if (typeof HUD !== 'undefined') {
           HUD.showMessage(this.qMode ? 'Qmode' : 'Qmode OFF');
         }
-      } else {
-        this.facing = this.facing === 1 ? -1 : 1;
       }
     }
 

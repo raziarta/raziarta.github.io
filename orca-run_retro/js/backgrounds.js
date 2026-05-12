@@ -69,77 +69,96 @@ const Backgrounds = {
         ctx.fillStyle = '#0f1218'; ctx.fillRect(0, 0, Game.width, Game.height);
         
         const time = (typeof Game !== 'undefined') ? Game.totalFrames : 0;
-        const bX1 = (camX * 0.2) % 400;
-        const bX2 = (camX * 0.4) % 600;
-
-        // Far background ruins
-        ctx.fillStyle = '#1c222c';
-        for(let i = 0; i < 6; i++) {
-          const rx = (i * 300 - bX1 + 1200) % 1800 - 300;
-          const ry = 100 + Math.sin(i * 99) * 100;
-          ctx.fillRect(rx, ry, 150, Game.height);
-          // Blocky windows
-          ctx.fillStyle = '#11151a';
-          for(let wy = ry + 20; wy < Game.height; wy += 40) {
-             for(let wx = rx + 20; wx < rx + 130; wx += 30) {
-               if (Math.sin(wy*wx) > 0) ctx.fillRect(wx, wy, 15, 20);
-             }
-          }
-          ctx.fillStyle = '#1c222c';
-        }
-
-        // Mid background collapsed structures
-        ctx.fillStyle = '#262d3a';
-        for(let i = 0; i < 8; i++) {
-          const rx = (i * 200 - bX2 + 1600) % 1600 - 200;
-          const tilt = Math.sin(i * 123) * 0.2;
-          ctx.save();
-          ctx.translate(rx, 300 + Math.cos(i) * 150);
-          ctx.rotate(tilt);
-          ctx.fillRect(0, 0, 100, Game.height);
-          // Rebar sticking out
-          ctx.fillStyle = '#4a2f2f';
-          ctx.fillRect(10, -20, 4, 20); ctx.fillRect(40, -40, 4, 40);
-          ctx.restore();
-        }
         
-        // Cave ceiling
-        ctx.fillStyle = '#0a0d12';
-        ctx.beginPath(); ctx.moveTo(0,0);
-        for(let x=0; x<=Game.width; x+=40) { ctx.lineTo(x, 40 + Math.sin((x+camX*0.5)*0.03)*30); }
-        ctx.lineTo(Game.width,0); ctx.fill();
+        // --- Far background ruins (Tiled Procedural) ---
+        // Width 1800 loop. Using the same 2-tile logic as Stage 1/2 but with a function
+        const bX1 = ((camX * 0.2) % 1800 + 1800) % 1800;
+        const drawFar = (offsetX) => {
+          for(let i = 0; i < 6; i++) {
+            let rx = (i * 300 - offsetX);
+            const ry = 100 + Math.sin(i * 99) * 100;
+            ctx.fillStyle = '#1c222c';
+            ctx.fillRect(rx, ry, 150, Game.height);
+            // Blocky windows
+            ctx.fillStyle = '#11151a';
+            for(let wy = ry + 20; wy < Game.height - 20; wy += 40) {
+              for(let wxOffset = 20; wxOffset < 130; wxOffset += 30) {
+                if (((wy * 123 + wxOffset * 456 + i * 789) % 10) > 4) {
+                  ctx.fillRect(rx + wxOffset, wy, 15, 20);
+                }
+              }
+            }
+          }
+        };
+        drawFar(bX1);
+        drawFar(bX1 - 1800); // The second tile
 
+        // --- Mid background collapsed structures ---
+        // Width 1600 loop.
+        const bX2 = ((camX * 0.4) % 1600 + 1600) % 1600;
+        const drawMid = (offsetX) => {
+          for(let i = 0; i < 8; i++) {
+            let rx = (i * 200 - offsetX);
+            const tilt = Math.sin(i * 123) * 0.2;
+            ctx.save();
+            ctx.translate(rx, 300 + Math.cos(i) * 150);
+            ctx.rotate(tilt);
+            ctx.fillStyle = '#262d3a';
+            ctx.fillRect(0, 0, 100, Game.height);
+            ctx.fillStyle = '#4a2f2f';
+            ctx.fillRect(10, -20, 4, 20); ctx.fillRect(40, -40, 4, 40);
+            ctx.restore();
+          }
+        };
+        drawMid(bX2);
+        drawMid(bX2 - 1600);
+
+        // Ceiling remains procedural for organic wave effect
+        ctx.fillStyle = '#0a0d12';
+        ctx.beginPath(); ctx.moveTo(0, 0);
+        for(let x = 0; x <= Game.width; x += 50) {
+          ctx.lineTo(x, 40 + Math.sin((x + camX * 0.5) * 0.03) * 30);
+        }
+        ctx.lineTo(Game.width, 0); ctx.fill();
+        return;
       } else if (phase === 4) {
         // Stage 5: Aberration Habitat (Fleshy / Bioluminescent)
         ctx.fillStyle = '#1a0510'; ctx.fillRect(0, 0, Game.width, Game.height);
         const time = (typeof Game !== 'undefined') ? Game.totalFrames : 0;
-        const pX1 = (camX * 0.3) % 800;
+        
+        // --- Fleshy pulsating pillars (Double Loop) ---
+        // 5 items, 350px spacing = 1750px loop
+        const pX1 = ((camX * 0.3) % 1750 + 1750) % 1750;
+        const drawPillars = (offsetX) => {
+          for(let i=0; i<5; i++) {
+            let x = (i * 350 - offsetX);
+            const pulse = Math.sin(time * 0.05 + i) * 15;
+            ctx.fillStyle = '#3a1020';
+            ctx.beginPath();
+            ctx.moveTo(x - 30 - pulse, 0);
+            ctx.quadraticCurveTo(x - 80, Game.height/2, x - 40 - pulse, Game.height);
+            ctx.lineTo(x + 40 + pulse, Game.height);
+            ctx.quadraticCurveTo(x + 80, Game.height/2, x + 30 + pulse, 0);
+            ctx.fill();
 
-        // Fleshy pulsating pillars
-        for(let i=0; i<5; i++) {
-          const x = (i * 350 - pX1 + 1750) % 1750 - 200;
-          const pulse = Math.sin(time * 0.05 + i) * 15;
-          ctx.fillStyle = '#3a1020';
-          ctx.beginPath();
-          ctx.moveTo(x - 30 - pulse, 0);
-          ctx.quadraticCurveTo(x - 80, Game.height/2, x - 40 - pulse, Game.height);
-          ctx.lineTo(x + 40 + pulse, Game.height);
-          ctx.quadraticCurveTo(x + 80, Game.height/2, x + 30 + pulse, 0);
-          ctx.fill();
-
-          // Bioluminescent spots
-          ctx.fillStyle = `rgba(0, 255, 150, ${0.3 + Math.sin(time*0.08+i)*0.2})`;
-          for(let sy=50; sy<Game.height; sy+=120) {
-            ctx.beginPath(); ctx.arc(x + Math.sin(sy)*20, sy, 8+Math.cos(sy)*4, 0, Math.PI*2); ctx.fill();
+            // Bioluminescent spots
+            ctx.fillStyle = `rgba(0, 255, 150, ${0.3 + Math.sin(time*0.08+i)*0.2})`;
+            for(let sy=50; sy<Game.height; sy+=120) {
+              ctx.beginPath(); ctx.arc(x + Math.sin(sy)*20, sy, 8+Math.cos(sy)*4, 0, Math.PI*2); ctx.fill();
+            }
           }
-        }
+        };
+        drawPillars(pX1);
+        drawPillars(pX1 - 1750);
         
         // Fleshy ceiling/floor bounds
         ctx.fillStyle = '#220814';
         ctx.beginPath(); ctx.moveTo(0,0);
-        for(let x=0; x<=Game.width; x+=30) { ctx.lineTo(x, 60 + Math.sin((x+camX*0.6)*0.04 + time*0.02)*20); }
+        for(let x=0; x<=Game.width; x+=50) {
+           ctx.lineTo(x, 60 + Math.sin((x+camX*0.6)*0.04 + time*0.02)*20); 
+        }
         ctx.lineTo(Game.width,0); ctx.fill();
-
+        return;
       } else if (phase === 5) {
         // Stage 6: Void / Nothingness (Monochrome Grid + Glitch)
         ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, Game.width, Game.height);

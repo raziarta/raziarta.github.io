@@ -40,13 +40,15 @@ const WorldMap = {
   ],
 
   init() {
-    // Load map images
-    this.mapImage1 = new Image();
-    this.mapImage1.src = 'assets/backgrounds/world1/原案1.png';
-    this.mapImage2 = new Image();
-    this.mapImage2.src = 'assets/backgrounds/world2/原案2.png';
-    this.mapImage3 = new Image();
-    this.mapImage3.src = 'assets/backgrounds/world3/原案3.png';
+    // Only load images once to prevent re-fetching and "black screen" moments
+    if (!this.mapImage1) {
+      this.mapImage1 = new Image();
+      this.mapImage1.src = 'assets/backgrounds/world1/原案1.png';
+      this.mapImage2 = new Image();
+      this.mapImage2.src = 'assets/backgrounds/world2/原案2.png';
+      this.mapImage3 = new Image();
+      this.mapImage3.src = 'assets/backgrounds/world3/原案3.png';
+    }
     
     this.selectedNode = 1; // Default to stage 1
     this.currentMap = 1;
@@ -157,6 +159,12 @@ const WorldMap = {
       // Darken overlay for readability
       ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
       ctx.fillRect(0, 0, W, H);
+    } else {
+      // Show loading indicator
+      ctx.fillStyle = '#fff';
+      ctx.font = '14px "Press Start 2P", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('LOADING MAP...', W / 2, H / 2);
     }
     
     // Map title

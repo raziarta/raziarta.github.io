@@ -541,27 +541,37 @@ const Renderer = {
     if (phase === 1) { // Alley
        ctx.fillStyle = crackColor;
        for (let x = offset; x < width; x += tileSize) {
+         if (x + tileSize < 0 || x > width) continue;
          ctx.fillRect(x, groundY + 10, 2, h); 
          ctx.fillRect(x + 20, groundY + 40, 40, 2);
        }
        ctx.fillStyle = '#2a4a2a'; // Moss patches
        for (let x = offset; x < width; x += tileSize) {
+         if (x + tileSize < 0 || x > width) continue;
          ctx.fillRect(x + 50, groundY, 20, 8);
          ctx.fillRect(x + 10, groundY + 20, 15, 10);
        }
     } else if (phase === 4) { // Aberration
        ctx.fillStyle = crackColor;
+       ctx.beginPath();
        for (let x = offset; x < width; x += tileSize) {
-         ctx.beginPath(); ctx.arc(x + 30, groundY + 40, 15, 0, Math.PI*2); ctx.fill();
-         ctx.beginPath(); ctx.arc(x + 90, groundY + 70, 20, 0, Math.PI*2); ctx.fill();
+         if (x + tileSize < 0 || x > width) continue;
+         ctx.moveTo(x + 30 + 15, groundY + 40); ctx.arc(x + 30, groundY + 40, 15, 0, Math.PI*2);
+         ctx.moveTo(x + 90 + 20, groundY + 70); ctx.arc(x + 90, groundY + 70, 20, 0, Math.PI*2);
        }
+       ctx.fill();
+       
        const time = typeof Game !== 'undefined' ? Game.totalFrames : 0;
        ctx.fillStyle = `rgba(0, 255, 150, ${0.3 + Math.sin(time*0.1)*0.2})`;
+       ctx.beginPath();
        for (let x = offset; x < width; x += tileSize) {
-         ctx.beginPath(); ctx.arc(x + 30, groundY + 40, 8, 0, Math.PI*2); ctx.fill();
+         if (x + tileSize < 0 || x > width) continue;
+         ctx.moveTo(x + 30 + 8, groundY + 40); ctx.arc(x + 30, groundY + 40, 8, 0, Math.PI*2);
        }
+       ctx.fill();
     } else if (phase === 6) { // Volcano Magma
        for (let x = offset; x < width; x += tileSize) {
+         if (x + tileSize < 0 || x > width) continue;
          ctx.fillStyle = crackColor; // Glowing Red
          ctx.fillRect(x + 20, groundY + 20, 40, 4);
          ctx.fillRect(x + 40, groundY + 20, 4, 30);
@@ -572,6 +582,7 @@ const Renderer = {
        // Standard Cracks
        ctx.fillStyle = crackColor;
        for (let x = offset; x < width; x += tileSize) {
+         if (x + tileSize < 0 || x > width) continue;
          ctx.fillRect(x, groundY + 10, 2, h - 20);
          ctx.fillRect(x + 20, groundY + 30, 40, 2);
          ctx.fillRect(x + 70, groundY + 60, 30, 2);

@@ -340,17 +340,17 @@ const UPGRADE_POOLS = {
     ],
     projectile: [
         { id: 'p1', name: "マシンガン", desc: "回復速度：とてもはやい\nダメージ：ちいさい", stats: { projectileRecoveryRate: 20.0, damageProjectile: 1, projectileSpeed: 20.0, projectileAutoFire: true, projectileRangeMult: 0.5 } },
-        { id: 'p2', name: "ス〇イパー", desc: "弾速：とてもはやい\nダメージ：おおきい", stats: { projectileRecoveryRate: 1.0, damageProjectile: 2, projectileSpeed: 40.0, projectileRangeMult: 2.0 } },
+        { id: 'p2', name: "ハヤイ", desc: "弾速：とてもはやい\nダメージ：おおきい", stats: { projectileRecoveryRate: 1.0, damageProjectile: 2, projectileSpeed: 40.0, projectileRangeMult: 2.0 } },
         { id: 'p3', name: "キャノン", desc: "右クリックでスコープ\nスコープ中のみ発射可能\nダメージ：とてもおおきい", stats: { projectileRecoveryRate: 0.33, damageProjectile: 5, projectileSpeed: 40.0, projectileRadiusMult: 2.0, projectileRequiresScope: true } },
         { id: 'p4', name: "マガジン", desc: "最大装弾数が\n2発増加する", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 20.0, maxProjectileStock: 4.0 } },
-        { id: 'p5', name: "〇ック", desc: "弾のサイズが大きく\nダメージも少し高い", stats: { projectileRecoveryRate: 1.0, damageProjectile: 2, projectileSpeed: 20.0, projectileRadiusMult: 1.6 } },
-        { id: 'p6', name: "ジェ〇ニ", desc: "弾が斜め2方向に\n分裂して飛ぶ", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 20.0, projectileSplit: 2 } },
-        { id: 'p7', name: "ト〇プレット", desc: "弾が正面と斜めの\n3方向に飛ぶ", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 20.0, projectileSplit: 3 } },
-        { id: 'p8', name: "〇プレッド", desc: "周囲12方向に\n弾をばらまく", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 20.0, projectileSplit: 12 } },
-        { id: 'p9', name: "ニー〇ル", desc: "弾が壁を\n貫通する", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 20.0, projectilePassWall: true, projectileIsNeedle: true } },
-        { id: 'p10', name: "ペ〇トレ", desc: "高速の弾が\n壁を貫通する", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 35.0, projectilePassWall: true, projectileIsNeedle: true } },
-        { id: 'p11', name: "〇ウンド", desc: "壁で2回まで\n跳ね返る弾", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 20.0, projectileBounces: 2 } },
-        { id: 'p12', name: "〇ング", desc: "弾の射程が\n大幅に伸びる", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 20.0, projectileRangeMult: 3.0, projectileRequiresScope: false } }
+        { id: 'p5', name: "ブロック", desc: "弾のサイズが大きく\nダメージも少し高い", stats: { projectileRecoveryRate: 1.0, damageProjectile: 2, projectileSpeed: 20.0, projectileRadiusMult: 1.6 } },
+        { id: 'p6', name: "ブンレツ", desc: "弾が斜め2方向に\n分裂して飛ぶ", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 20.0, projectileSplit: 2 } },
+        { id: 'p7', name: "サンタク", desc: "弾が正面と斜めの\n3方向に飛ぶ", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 20.0, projectileSplit: 3 } },
+        { id: 'p8', name: "バラマキ", desc: "周囲12方向に\n弾をばらまく", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 20.0, projectileSplit: 12 } },
+        { id: 'p9', name: "トゲ", desc: "弾が壁を\n貫通する", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 20.0, projectilePassWall: true, projectileIsNeedle: true } },
+        { id: 'p10', name: "ミサイル", desc: "高速の弾が\n壁を貫通する", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 35.0, projectilePassWall: true, projectileIsNeedle: true } },
+        { id: 'p11', name: "バウンド", desc: "壁で2回まで\n跳ね返る弾", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 20.0, projectileBounces: 2 } },
+        { id: 'p12', name: "ナガイ", desc: "弾の射程が\n大幅に伸びる", stats: { projectileRecoveryRate: 1.0, damageProjectile: 1, projectileSpeed: 20.0, projectileRangeMult: 3.0, projectileRequiresScope: false } }
     ],
     bubble: [
         { id: 'b1', name: "シャワー", desc: "回復速度：とてもはやい\nダメージ：ちいさい", stats: { bubbleRecoveryRate: 0.45, damageBubble: 1, bubbleSpeedY: 5.0 } },
@@ -377,7 +377,7 @@ function showRewardScreen() {
     
     const OMAKE_OPTIONS = [
         { text: "おまけなし", type: "none" },
-        { text: "おまけでイノーチ", type: "life" },
+        { text: "おまけでライフ", type: "life" },
         { text: "おまけなし", type: "none" }
     ];
 

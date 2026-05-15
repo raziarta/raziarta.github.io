@@ -45,12 +45,12 @@ function updateFixedLogic(dt) {
     G.bubbles.forEach(b => {
         if (b.body) {
             // ホスト/オフライン: 物理bodyで上昇
-            b.body.linearVelocity.y = 8.0;
+            b.body.linearVelocity.y = b.speedY || 5.0;
             b.body.linearVelocity.x *= 0.987;
             b.body.linearVelocity.z *= 0.987;
         } else {
             // クライアント: メッシュ位置を速度予測で更新
-            b.mesh.position.y += 8.0 * dt;
+            b.mesh.position.y += (b.speedY || 5.0) * dt;
         }
     });
 
@@ -152,7 +152,7 @@ function updateFixedLogic(dt) {
         if (body.angularVelocity) { body.angularVelocity.x=0; body.angularVelocity.y=0; body.angularVelocity.z=0; }
 
         let isEntGrounded=false;
-        const pyBot=epos.y-0.37, bY=Math.floor(pyBot-0.01), bTop=bY+1.0;
+        const pyBot=epos.y-0.37, bY=Math.floor(pyBot-0.1), bTop=bY+1.0;
         if (Math.abs(pyBot-bTop)<0.12) { const gx=Math.floor(epos.x), gz=Math.floor(epos.z); if (G.mapGrid.has(`${gx},${bY},${gz}`)) isEntGrounded=true; }
         if (!isEntGrounded) {
             G.membranes.forEach(m => {
@@ -160,7 +160,9 @@ function updateFixedLogic(dt) {
             });
         }
         if (isEntGrounded) ent.groundContactFrames++; else ent.groundContactFrames=0;
-        isEntGrounded = (ent.groundContactFrames>=3);
+        // プレイヤー(index 0)は即時、AIは3フレーム待機
+        const requiredFrames = ent.isAI ? 3 : 1;
+        isEntGrounded = (ent.groundContactFrames>=requiredFrames);
 
         if (ent.maxMembraneY===undefined) ent.maxMembraneY=-Infinity;
         const entBot=epos.y-0.37;
@@ -179,8 +181,14 @@ function updateFixedLogic(dt) {
                 ent.currentMembraneY=-Infinity;
             }
         });
-        if (ent.isAI) ent.isGrounded=isEntGrounded;
-        else { const wg=G.isGrounded; G.isGrounded=isEntGrounded; if (G.isGrounded&&!wg) G.minJumpInterval=0; }
+        // 物理的な接触判定(contactFloor)とグリッド判定(isEntGrounded)を統合
+        if (ent.isAI) ent.isGrounded = isEntGrounded;
+        else {
+            const wg = G.isGrounded;
+            // 物理接触(contactFloor) または グリッド上の足場(isEntGrounded) があれば接地とみなす
+            G.isGrounded = isEntGrounded || (contactFloor && Math.abs(evel.y) < 0.5);
+            if (G.isGrounded && !wg) G.minJumpInterval = 0;
+        }
     });
 
     // AI行動ループ
@@ -449,12 +457,13 @@ function renderVisuals(dt) {
     let zOffset = G.camDist;
     let hidePlayer = false;
 
-    if (G.camDist <= 1.0) {
-        // スコープモードへの遷移 (camDist: 1.0 -> 0.0)
-        const t = 1.0 - G.camDist; // 0.0(通常) -> 1.0(完全ズーム)
+    let isAnyScoped = G.isScopedIn || G.camDist <= 1.0;
+    if (isAnyScoped) {
+        // スコープモードへの遷移 (G.isScopedIn の時は強制的に最大ズーム)
+        const t = G.isScopedIn ? 1.0 : (1.0 - G.camDist); // 0.0(通常) -> 1.0(完全ズーム)
         targetFov = 75 - 45 * t; // FOV 75 -> 30 に拡大
         yOffset = 0.97 - (0.97 - 0.05) * t; // 高さを口元へ (0.05)
-        zOffset = G.camDist * (1 - t) - 0.1 * t; // カメラをモデルの前方へ (-0.1)
+        zOffset = G.isScopedIn ? -0.1 : (G.camDist * (1 - t) - 0.1 * t); // カメラをモデルの前方へ (-0.1)
         if (t > 0.8) hidePlayer = true;
     }
 

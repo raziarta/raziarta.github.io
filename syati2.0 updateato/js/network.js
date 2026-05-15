@@ -8,13 +8,16 @@ function packData(eventId, data) {
         return [1, data.id, Math.round(data.x * 100) / 100, Math.round(data.y * 100) / 100, Math.round(data.z * 100) / 100, data.jumps];
     }
     if (eventId === 0) {
-        return { event: 0, seed: data.seed, hostId: data.hostId, hostName: data.name, hostConfig: data.hostConfig };
+        return { event: 0, seed: data.seed, hostId: data.hostId, hostName: data.name, hostConfig: data.hostConfig, density: data.density };
     }
     if (eventId === 5) {
         return { event: 5, id: data.id, name: data.name };
     }
     if (eventId === 6) {
         return { event: 6, seed: data.seed, mode: data.mode, areaSize: data.areaSize, density: data.density, goalHeight: data.goalHeight, maxLives: data.maxLives, aiCount: data.aiCount };
+    }
+    if (eventId === 7) {
+        return { event: 7, config: data.config };
     }
     if (eventId === 10) {
         const p = data.props;
@@ -54,6 +57,9 @@ function packData(eventId, data) {
         // [UPDATED] Stats Sync Events
         return { event: 22 };
     }
+    if (eventId === 25) {
+        return { event: 25, list: data.list };
+    }
     if (eventId === 33) {
         return { event: 33, peerId: data.peerId, isDead: data.isDead };
     }
@@ -66,13 +72,16 @@ function packData(eventId, data) {
     if (eventId === 32) {
         return { event: 32, peerId: data.peerId, invincible: data.invincible };
     }
+    if (eventId === 34) {
+        return { event: 34, killerName: data.killerName, victimName: data.victimName };
+    }
 }
 
 function unpackData(arr) {
     if (!arr) return null;
-    if (arr.event === 0 || arr.event === 5 || arr.event === 6 ||
-        arr.event === 20 || arr.event === 22 ||
-        arr.event === 30 || arr.event === 31 || arr.event === 32 || arr.event === 33) return arr;
+    if (arr.event === 0 || arr.event === 5 || arr.event === 6 || arr.event === 7 ||
+        arr.event === 20 || arr.event === 22 || arr.event === 25 ||
+        arr.event === 30 || arr.event === 31 || arr.event === 32 || arr.event === 33 || arr.event === 34) return arr;
 
     if (Array.isArray(arr)) {
         const ev = arr[0];
@@ -94,16 +103,41 @@ function unpackData(arr) {
     return arr;
 }
 
+let _isBroadcasting = false;
 function broadcastEvent(eventId, rawData) {
-    if (!G.isOnline) return;
+    if (!G.isOnline || _isBroadcasting) return;
+    
+    console.log(`[NET-FLOW] >>> BROADCAST: Event ${eventId}`, rawData);
+    
     const packed = packData(eventId, rawData);
+    if (packed === undefined || packed === null) {
+        console.warn(`[Multiplayer] Skipping broadcast for Event ${eventId}: Packed data is null/undefined.`);
+        return;
+    }
+
+    _isBroadcasting = true;
     if (G.isHost) {
+        // ホスト自身にも適用
+        const data = unpackData(packed);
+        handleNetworkData(data, null);
+
         G.connections.forEach(c => {
-            if (c.open) c.send(packed);
+            if (c.open) {
+                try {
+                    c.send(packed);
+                } catch (e) {
+                    console.error(`[Multiplayer] Failed to send Event ${eventId} to ${c.peer}:`, e);
+                }
+            }
         });
     } else if (G.hostConn && G.hostConn.open) {
-        G.hostConn.send(packed);
+        try {
+            G.hostConn.send(packed);
+        } catch (e) {
+            console.error(`[Multiplayer] Failed to send Event ${eventId} to host:`, e);
+        }
     }
+    _isBroadcasting = false;
 }
 
 function sendToClient(peerId, eventId, rawData) {
@@ -196,7 +230,18 @@ function setupHost() {
             G.connections.push(conn);
             conn.on('open', () => {
                 // ホスト自身の名前を送信
-                conn.send(packData(0, { seed: G.randomSeed, hostId: G.myPeerId, name: G.myPlayerName, hostConfig: { deathFallMode: config.deathFallMode, areaSize: config.areaSize, goalHeight: config.goalHeight } }));
+                conn.send(packData(0, {
+                    seed: G.randomSeed,
+                    hostId: G.myPeerId,
+                    name: G.myPlayerName,
+                    density: config.density,
+                    hostConfig: {
+                        deathFallMode: config.deathFallMode,
+                        areaSize: config.areaSize,
+                        goalHeight: config.goalHeight,
+                        density: config.density
+                    }
+                }));
                 // 既存の全プレイヤーの名前リストを新規接続者に同期
                 G.peerNames.forEach((name, id) => {
                     if (id !== G.myPeerId) {
@@ -311,7 +356,10 @@ function enterClientLobby() {
     if (exitBtn) exitBtn.style.display = 'block';
     
     const listEl = document.getElementById('lobby-player-list');
-    if (listEl) listEl.style.display = 'block';
+    if (listEl) {
+        const panel = document.getElementById('lobby-panel');
+        if (panel) panel.style.display = 'block';
+    }
 }
 
 function exitClientLobby() {
@@ -328,8 +376,10 @@ function exitClientLobby() {
 
     const exitBtn = document.getElementById('btn-exit-lobby');
     if (exitBtn) exitBtn.style.display = 'none';
+    const panel = document.getElementById('lobby-panel');
+    if (panel) panel.style.display = 'none';
     const playerList = document.getElementById('lobby-player-list');
-    if (playerList) { playerList.style.display = 'none'; playerList.innerHTML = ''; }
+    if (playerList) playerList.innerHTML = '';
 }
 
 // ロビープレイヤーリスト更新（ホスト用）
@@ -342,7 +392,7 @@ function updateLobbyPlayerList() {
     names.push(`<span style="color:#0ea5e9; font-weight:bold;">★ ${G.myPlayerName} (HOST)</span>`);
     // 接続中のクライアント
     G.peerNames.forEach((name, id) => {
-        names.push(`<span style="color:#334155;">● ${name}</span>`);
+        names.push(`<span style="color:#f1f5f9;">● ${name}</span>`);
     });
     // まだ名前を受信していない接続
     G.connections.forEach(c => {
@@ -351,24 +401,55 @@ function updateLobbyPlayerList() {
         }
     });
 
-    listEl.innerHTML = `<div style="font-size:10px; font-weight:800; color:#666; letter-spacing:2px; margin-bottom:6px;">▸ PLAYERS IN LOBBY</div>` + names.join('<br>');
-    listEl.style.display = 'block';
+    listEl.innerHTML = names.join('<br>');
+    
+    const panel = document.getElementById('lobby-panel');
+    if (panel) panel.style.display = 'block';
+
+    updateLobbySettingsUI();
+}
+
+function updateLobbySettingsUI() {
+    const listEl = document.getElementById('lobby-settings-list');
+    if (!listEl) return;
+
+    const rows = [
+        { label: 'AREA SIZE', val: config.areaSize },
+        { label: 'DENSITY', val: (config.density * 100).toFixed(0) + '%' },
+        { label: 'GOAL HEIGHT', val: config.goalHeight + 'm' },
+        { label: 'MAX LIVES', val: config.maxLives },
+        { label: 'AI COUNT', val: config.aiCount },
+        { label: 'DEATH FALL', val: config.deathFallMode === 'none' ? 'OFF' : config.deathFallMode + 'm' }
+    ];
+
+    listEl.innerHTML = rows.map(r => `
+        <div class="setting-item">
+            <span>${r.label}</span>
+            <span class="setting-val">${r.val}</span>
+        </div>
+    `).join('');
 }
 
 function handleNetworkData(rawData, sourceConn) {
     const data = unpackData(rawData);
     if (!data) return;
 
+    const from = sourceConn ? sourceConn.peer : "LOCAL(HOST)";
+    console.log(`[NET-FLOW] <<< RECEIVED: Event ${data.event} from ${from}`, data);
+
     if (data.event === 0) {
         if (!G.isHost) {
             G.randomSeed = data.seed;
             console.log("Received Seed:", G.randomSeed);
             G.peerNames.set(data.hostId, data.hostName);
+            if (data.density !== undefined) config.density = data.density;
             if (data.hostConfig) {
                 if (data.hostConfig.deathFallMode) config.deathFallMode = data.hostConfig.deathFallMode;
                 if (data.hostConfig.areaSize) config.areaSize = data.hostConfig.areaSize;
                 if (data.hostConfig.goalHeight) config.goalHeight = data.hostConfig.goalHeight;
+                if (data.hostConfig.density) config.density = data.hostConfig.density;
             }
+            updateLobbySettingsUI();
             broadcastEvent(5, { id: G.myPeerId, name: G.myPlayerName });
         }
     } else if (data.event === 1) {
@@ -381,7 +462,7 @@ function handleNetworkData(rawData, sourceConn) {
             ent.sprite = createNameSprite(data.name);
             ent.mesh.add(ent.sprite);
         }
-        if (G.isHost) {
+        if (G.isHost && sourceConn !== null) {
             broadcastEvent(5, data);
             updateLobbyPlayerList();
 
@@ -404,9 +485,9 @@ function handleNetworkData(rawData, sourceConn) {
             const names = data.list.map(p =>
                 p.isHost
                 ? `<span style="color:#0ea5e9; font-weight:bold;">★ ${p.name} (HOST)</span>`
-                : `<span style="color:#334155;">● ${p.name}${p.id === G.myPeerId ? ' (YOU)' : ''}</span>`
+                : `<span style="color:#f1f5f9;">● ${p.name}${p.id === G.myPeerId ? ' (YOU)' : ''}</span>`
             );
-            listEl.innerHTML = `<div style="font-size:10px;font-weight:800;color:#666;letter-spacing:2px;margin-bottom:6px;">▸ PLAYERS IN LOBBY</div>` + names.join('<br>');
+            listEl.innerHTML = names.join('<br>');
             listEl.style.display = 'block';
         }
     } else if (data.event === 6) {
@@ -440,6 +521,12 @@ function handleNetworkData(rawData, sourceConn) {
             if (G.controls) {
                 try { G.controls.lock(); } catch (e) { }
             }
+        }
+    } else if (data.event === 7) {
+        // [NEW] ホストからのリアルタイム設定同期
+        if (!G.isHost && data.config) {
+            Object.assign(config, data.config);
+            updateLobbySettingsUI();
         }
     } else if (data.event === 10) {
         if (G.isHost) {
@@ -609,6 +696,17 @@ function handleNetworkData(rawData, sourceConn) {
                 }; 
             });
             broadcastEvent(31, { stats: statsObj });
+
+            // [NEW] キルログ通知を全員に送信
+            const victimEnt = (data.peerId === G.myPeerId) ? { name: G.myPlayerName } : G.networkEntities.get(data.peerId);
+            const victimName = victimEnt ? victimEnt.name : "Player";
+            let killerName = "落下 / 罠";
+            if (data.killedBy) {
+                const kEnt = (data.killedBy === G.myPeerId) ? { name: G.myPlayerName } : G.networkEntities.get(data.killedBy);
+                if (kEnt) killerName = kEnt.name;
+            }
+            broadcastEvent(34, { killerName, victimName });
+
             // ホスト自身の画面も更新
             if (typeof updateScoreboard === 'function') updateScoreboard();
         }
@@ -708,6 +806,13 @@ function handleNetworkData(rawData, sourceConn) {
                     c.send(packData(33, data));
                 }
             });
+        }
+    } else if (data.event === 34) {
+        // [NEW] キルログ通知を受信
+        if (typeof addKillLog === 'function') {
+            // ホストの場合、自分自身の死亡ログは ui.js で表示済みなのでスキップ
+            if (G.isHost && data.victimName === G.myPlayerName) return;
+            addKillLog(data.killerName, data.victimName);
         }
     }
 }

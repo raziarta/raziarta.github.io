@@ -6,14 +6,12 @@
 function requestFire(type) {
     if (!G.isStarted || G.isDead) return;
 
-    // スコープ必須モードのとき、スコープ中でなければ発射しない
-    if (type === 0 && config.projectileRequiresScope && !G.isScopedIn) return;
+    // (条件チェックは呼び出し元の player.js 等で実施済み)
+    
     
     // 発射後スコープを自動解除
     if (type === 0 && config.projectileRequiresScope) {
         G.isScopedIn = false;
-        G.camera.fov = 75;
-        G.camera.updateProjectionMatrix();
         const overlay = document.getElementById('scope-overlay');
         if (overlay) overlay.style.display = 'none';
     }
@@ -229,12 +227,11 @@ function createBubble(startX, startY, startZ, velX, velY, velZ, owner = null, re
         body,
         mesh,
         spawnY: startY,
-        velY: velY,
-        netId,
+        speedY: velY,
         ownerBody: owner,
         ownerId: finalOwnerId,
-        ownerName: resolveName(owner),
-        spawnTime: Date.now(),
+        netId,
+        createdAt: Date.now(),
         props: pProps
     });
 

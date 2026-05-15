@@ -134,22 +134,51 @@ function setupControls() {
             G.keys.rightClick = true;
             if (!document.getElementById('reward-screen').classList.contains('hidden')) return;
 
-            if (config.projectileRequiresScope && !G.isScopedIn) {
-                G.isScopedIn = true;
-                G.camera.fov = 30;
-                G.camera.updateProjectionMatrix();
-                const overlay = document.getElementById('scope-overlay');
-                if (overlay) overlay.style.display = 'block';
-                return; // スコープインするだけで発射しない
-            }
+            if (config.projectileRequiresScope) {
+                if (!G.isScopedIn) {
+                    // 第1段階：スコープイン（空中でも可能にする）
+                    G.isScopedIn = true;
+                    const overlay = document.getElementById('scope-overlay');
+                    if (overlay) overlay.style.display = 'block';
+                    return;
+                } else {
+                    // 第2段階：スコープ済み → 発射試行
+                    // 接地していない場合は発射せずにスコープ解除（キャンセル）
+                    // 垂直速度がほぼゼロなら接地とみなす(保険)
+                    const isPhysicallyGrounded = G.isGrounded || Math.abs(G.playerBody.linearVelocity.y) < 0.2;
 
-            const now = Date.now();
-            const projCooldown = 500 / (config.projectileRecoveryRate || 1);
-            if (now - G.lastFireTimeProjectile >= projCooldown && G.playerProjectileStock >= 1.0) {
-                G.lastFireTimeProjectile = now;
-                G.playerProjectileStock -= 1.0;
-                updateAmmoHUD();
-                requestFire(0);
+                    if (!isPhysicallyGrounded) {
+                        G.isScopedIn = false;
+                        const overlay = document.getElementById('scope-overlay');
+                        if (overlay) overlay.style.display = 'none';
+                        return;
+                    }
+
+                    const now = Date.now();
+                    const projCooldown = 500 / (config.projectileRecoveryRate || 1);
+                    const timeDiff = now - G.lastFireTimeProjectile;
+
+                    if (timeDiff >= projCooldown && G.playerProjectileStock >= 1.0) {
+                        G.lastFireTimeProjectile = now;
+                        G.playerProjectileStock -= 1.0;
+                        updateAmmoHUD();
+                        requestFire(0);
+                    }
+                    // 発射後スコープ解除
+                    G.isScopedIn = false;
+                    const overlay = document.getElementById('scope-overlay');
+                    if (overlay) overlay.style.display = 'none';
+                }
+            } else {
+                // 通常武器：スコープなしで即発射
+                const now = Date.now();
+                const projCooldown = 500 / (config.projectileRecoveryRate || 1);
+                if (now - G.lastFireTimeProjectile >= projCooldown && G.playerProjectileStock >= 1.0) {
+                    requestFire(0);
+                    G.lastFireTimeProjectile = now;
+                    G.playerProjectileStock -= 1.0;
+                    updateAmmoHUD();
+                }
             }
         }
     });

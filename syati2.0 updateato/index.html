@@ -251,10 +251,50 @@
         </div>
         <div id="scope-overlay" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:5;">
             <div style="position:absolute; top:0; bottom:0; left:0; right:0; box-shadow:inset 0 0 100px rgba(0,0,0,0.8);"></div>
-            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:40px; height:40px; border:2px solid rgba(255,0,0,0.6); border-radius:50%;"></div>
-            <div style="position:absolute; top:50%; left:50%; width:60px; height:2px; background:rgba(255,0,0,0.6); transform:translate(-50%, -50%);"></div>
-            <div style="position:absolute; top:50%; left:50%; width:2px; height:60px; background:rgba(255,0,0,0.6); transform:translate(-50%, -50%);"></div>
         </div>
+
+        <!-- キルログ用コンテナ -->
+        <div id="kill-log-container"></div>
+        <style>
+            #kill-log-container {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                width: 260px;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                pointer-events: none;
+                z-index: 100;
+            }
+            .kill-log-entry {
+                background: rgba(15, 23, 42, 0.7);
+                backdrop-filter: blur(4px);
+                border-left: 3px solid #f43f5e;
+                color: #fff;
+                padding: 8px 12px;
+                border-radius: 2px;
+                font-family: 'Inter', sans-serif;
+                font-size: 11px;
+                font-weight: 700;
+                display: flex;
+                align-items: center;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                animation: logSlideIn 0.3s ease-out forwards;
+                text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+            }
+            .kill-log-killer { color: #38bdf8; }
+            .kill-log-victim { color: #f43f5e; }
+            .kill-log-arrow { margin: 0 6px; color: #94a3b8; font-size: 10px; }
+            @keyframes logSlideIn {
+                from { transform: translateX(20px); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes logFadeOut {
+                from { opacity: 1; }
+                to { opacity: 0; transform: translateY(-10px); }
+            }
+        </style>
         <div id="life-display" style="position: absolute; bottom: 30px; right: 30px; font-size: 28px; color: rgba(255, 80, 80, 0.9); text-shadow: 0 0 10px rgba(255, 0, 0, 0.3); letter-spacing: 4px;">♥♥♥</div>
         <div id="tutorial-ui" class="hidden" style="position: absolute; top: 50%; right: 30px; transform: translateY(-50%); background: rgba(0,0,0,0.6); padding: 20px; border-radius: 8px; color: rgba(255,255,255,0.9); font-size: 14px; border: 1px solid rgba(255,255,255,0.2); pointer-events: auto; text-shadow: 1px 1px 2px #000; z-index: 10;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; min-width: 150px;">
@@ -343,7 +383,39 @@
                     </div>
                 </div>
             </div>
-            <div id="lobby-player-list" style="margin-top: 10px; font-size: 12px; color: #334155; min-height: 15px; display: none;"></div>
+            <!-- ロビー情報パネル -->
+            <div id="lobby-panel" style="display: none; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                <div style="display: flex; gap: 20px;">
+                    <!-- プレイヤーリスト (左) -->
+                    <div style="flex: 1; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 4px; border: 1px solid rgba(14, 165, 233, 0.2);">
+                        <div style="font-size: 10px; font-weight: 800; color: #64b4ff; letter-spacing: 2px; margin-bottom: 10px;">▸ PLAYERS IN LOBBY</div>
+                        <div id="lobby-player-list" style="font-size: 12px; line-height: 1.8;"></div>
+                    </div>
+                    
+                    <!-- ルーム設定 (右) -->
+                    <div style="flex: 1; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1);">
+                        <div style="font-size: 10px; font-weight: 800; color: #94a3b8; letter-spacing: 2px; margin-bottom: 10px;">▸ ROOM SETTINGS</div>
+                        <div id="lobby-settings-list" style="font-size: 11px; color: #cbd5e1; line-height: 1.8;">
+                            <!-- Settings will be injected here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <style>
+                #lobby-settings-list .setting-item {
+                    display: flex;
+                    justify-content: space-between;
+                    border-bottom: 1px solid rgba(255,255,255,0.05);
+                    padding-bottom: 2px;
+                    margin-bottom: 4px;
+                }
+                #lobby-settings-list .setting-val {
+                    color: #fff;
+                    font-weight: bold;
+                    font-family: monospace;
+                }
+            </style>
         </div>
 
         <div id="name-input-overlay" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:rgba(10, 15, 25, 0.95); border:2px solid #0ea5e9; box-shadow: 0 0 30px rgba(14, 165, 233, 0.5); padding:25px; z-index:99999; border-radius: 8px; text-align: center; backdrop-filter: blur(5px);">
@@ -629,6 +701,23 @@
             updateOptionsUI();
             syncOptionToGame(s);
             saveOptions();
+            syncLobbySettings();
+        }
+
+        function syncLobbySettings() {
+            if (G.isHost && G.isOnline) {
+                broadcastEvent(7, {
+                    config: {
+                        areaSize: config.areaSize,
+                        density: config.density,
+                        goalHeight: config.goalHeight,
+                        maxLives: config.maxLives,
+                        aiCount: config.aiCount,
+                        deathFallMode: config.deathFallMode
+                    }
+                });
+                updateLobbySettingsUI();
+            }
         }
 
         function executeOptionAction() {
@@ -895,6 +984,7 @@
             if (s.key === 'goalHeight') config.goalHeight = s.value;
             if (s.key === 'maxLives') config.maxLives = s.value;
             if (s.key === 'aiCount') config.aiCount = s.value;
+            syncLobbySettings();
         }
 
         // アセットの初期化

@@ -29,7 +29,7 @@ const config = {
     // Bubble Stats
     maxBubbleStock: 2,
     bubbleSpeedY: 5.0,
-    bubbleRecoveryRate: 0.18,
+    bubbleRecoveryRate: 0.108,
     projectileAutoFire: false,
     brightness: 0.46,
     deathFallMode: '50' // 'none', '25', '50'

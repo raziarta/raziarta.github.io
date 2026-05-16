@@ -249,14 +249,26 @@ window.autoLoadGhostData = async function() {
         console.log(`[AutoLoad] Found ${fileList.length} files in index.json`);
 
         for (const relativePath of fileList) {
-            // 例: "otameshi822/records.json" -> playerName: "otameshi822"
-            const parts = relativePath.split('/');
-            let playerName = "UNKNOWN";
-            if (parts.length >= 2) {
-                playerName = parts[0];
+            // パスの正規化 (例: "./ghost_data/Alice/data.json" -> "Alice/data.json")
+            let cleanPath = relativePath.replace(/^\.\//, '').replace(/^\//, '');
+            if (cleanPath.startsWith('ghost_data/')) {
+                cleanPath = cleanPath.substring(11);
             }
             
-            await importJsonFile(`./ghost_data/${relativePath}`, playerName);
+            const parts = cleanPath.split('/');
+            let playerName = "UNKNOWN";
+            if (parts.length >= 2) {
+                playerName = parts[0]; // フォルダ名をプレイヤー名にする
+            } else if (parts.length === 1) {
+                playerName = parts[0].split('.')[0] || "UNKNOWN"; // フォルダがない場合はファイル名
+            }
+            
+            // fetch時は元の相対パスを安全に利用する
+            const fetchUrl = relativePath.startsWith('http') || relativePath.startsWith('/') || relativePath.startsWith('./') 
+                ? relativePath 
+                : `./ghost_data/${relativePath}`;
+                
+            await importJsonFile(fetchUrl, playerName);
         }
         
         if (typeof renderRecordsContent === 'function') renderRecordsContent();
@@ -297,10 +309,9 @@ async function importJsonFile(url, playerName) {
                     const existing = localStorage.getItem(key);
                     let merged = data[key];
 
+                    // インポートする全レコードにプレイヤー名を強制上書き
                     merged.forEach(r => {
-                        if (!r.playerName || r.playerName === 'YOU') {
-                            r.playerName = playerName;
-                        }
+                        r.playerName = playerName;
                     });
                     
                     if (existing) {

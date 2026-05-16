@@ -232,30 +232,37 @@ function recordPlayerPath() {
  * (開発サーバー等のディレクトリリスティング機能を利用)
  */
 window.autoLoadGhostData = async function() {
-    console.log("[AutoLoad] Attempting to scan ./ghost_data/ ...");
+    console.log("[AutoLoad] Fetching ./ghost_data/index.json ...");
     try {
-        const response = await fetch('./ghost_data/');
-        if (!response.ok) return;
-        
-        const html = await response.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const links = Array.from(doc.querySelectorAll('a'))
-            .map(a => a.getAttribute('href'))
-            .filter(href => href && !href.startsWith('..') && href !== '/');
-
-        for (const href of links) {
-            if (href.endsWith('/')) {
-                // フォルダの場合 -> その中を探索
-                const playerName = href.replace('/', '');
-                await scanPlayerFolder(playerName);
-            } else if (href.endsWith('.json')) {
-                // 直接JSONがある場合
-                await importJsonFile(`./ghost_data/${href}`, "UNKNOWN");
-            }
+        const response = await fetch('./ghost_data/index.json');
+        if (!response.ok) {
+            console.warn("[AutoLoad] index.json not found. Please create ghost_data/index.json with a list of files.");
+            return;
         }
+        
+        const fileList = await response.json();
+        if (!Array.isArray(fileList)) {
+            console.error("[AutoLoad] index.json must be an array of file paths.");
+            return;
+        }
+
+        console.log(`[AutoLoad] Found ${fileList.length} files in index.json`);
+
+        for (const relativePath of fileList) {
+            // 例: "otameshi822/records.json" -> playerName: "otameshi822"
+            const parts = relativePath.split('/');
+            let playerName = "UNKNOWN";
+            if (parts.length >= 2) {
+                playerName = parts[0];
+            }
+            
+            await importJsonFile(`./ghost_data/${relativePath}`, playerName);
+        }
+        
+        if (typeof renderRecordsContent === 'function') renderRecordsContent();
+        
     } catch (e) {
-        console.warn("[AutoLoad] Could not automatically list ghost_data folder. This is normal if the server doesn't support directory listing.", e);
+        console.error("[AutoLoad] Error reading index.json:", e);
     }
 };
 

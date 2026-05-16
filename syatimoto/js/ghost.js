@@ -187,6 +187,7 @@ function saveTimeTrialRecord(finishTime) {
         goalHeight: config.goalHeight,
         areaSize: config.areaSize,
         density: config.density,
+        playerName: 'YOU', // 自分の記録として明記
         path: G.timeTrialPath, // [{x,y,z}, ...] 2フレームごとの座標
         laps: G.laps ? JSON.parse(JSON.stringify(G.laps)) : [], // ラップタイムを複製して保存
         date: new Date().toLocaleString('ja-JP', {
@@ -227,26 +228,132 @@ function recordPlayerPath() {
 }
 
 /**
- * ゴーストデータをJSONとしてエクスポート（ダウンロード）
+ * サーバー上の ./ghost_data/ から自動的にゴーストデータを読み込む
+ * (開発サーバー等のディレクトリリスティング機能を利用)
  */
-window.exportGhostData = function(seed, height, areaSize, density) {
-    // V3キー形式で検索
-    const key = `ghost_records_v3_${seed}_${height}_${areaSize}_${Number(density).toFixed(2)}`;
-    const saved = localStorage.getItem(key);
+window.autoLoadGhostData = async function() {
+    console.log("[AutoLoad] Attempting to scan ./ghost_data/ ...");
+    try {
+        const response = await fetch('./ghost_data/');
+        if (!response.ok) return;
+        
+        const html = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const links = Array.from(doc.querySelectorAll('a'))
+            .map(a => a.getAttribute('href'))
+            .filter(href => href && !href.startsWith('..') && href !== '/');
+
+        for (const href of links) {
+            if (href.endsWith('/')) {
+                // フォルダの場合 -> その中を探索
+                const playerName = href.replace('/', '');
+                await scanPlayerFolder(playerName);
+            } else if (href.endsWith('.json')) {
+                // 直接JSONがある場合
+                await importJsonFile(`./ghost_data/${href}`, "UNKNOWN");
+            }
+        }
+    } catch (e) {
+        console.warn("[AutoLoad] Could not automatically list ghost_data folder. This is normal if the server doesn't support directory listing.", e);
+    }
+};
+
+async function scanPlayerFolder(playerName) {
+    try {
+        const response = await fetch(`./ghost_data/${playerName}/`);
+        if (!response.ok) return;
+        
+        const html = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const links = Array.from(doc.querySelectorAll('a'))
+            .map(a => a.getAttribute('href'))
+            .filter(href => href && href.endsWith('.json'));
+
+        for (const jsonHref of links) {
+            await importJsonFile(`./ghost_data/${playerName}/${jsonHref}`, playerName);
+        }
+    } catch (e) {}
+}
+
+async function importJsonFile(url, playerName) {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) return;
+        const data = await response.json();
+        
+        if (data && typeof data === 'object' && !Array.isArray(data)) {
+            let importCount = 0;
+            for (const key in data) {
+                if (key.startsWith('ghost_records_')) {
+                    const existing = localStorage.getItem(key);
+                    let merged = data[key];
+
+                    merged.forEach(r => {
+                        if (!r.playerName || r.playerName === 'YOU') {
+                            r.playerName = playerName;
+                        }
+                    });
+                    
+                    if (existing) {
+                        try {
+                            const old = JSON.parse(existing);
+                            const map = new Map();
+                            [...old, ...merged].forEach(r => {
+                                const pName = r.playerName || 'YOU';
+                                const id = `${r.time.toFixed(3)}_${r.seed}_${r.goalHeight}_${pName}`;
+                                if (!map.has(id)) map.set(id, r);
+                            });
+                            merged = Array.from(map.values()).sort((a,b) => a.time - b.time).slice(0, 30);
+                        } catch(e) {}
+                    }
+                    localStorage.setItem(key, JSON.stringify(merged));
+                    importCount++;
+                }
+            }
+            console.log(`[AutoLoad] Imported ${importCount} records from ${url} (Player: ${playerName})`);
+        }
+    } catch (e) {
+        console.error("[AutoLoad] Failed to import:", url, e);
+    }
+}
+
+
+/**
+ * 全てのゴーストデータを一括でJSONとしてエクスポート（ダウンロード）
+ */
+window.exportGhostData = function() {
+    const allData = {};
+    let count = 0;
+
+    // localStorage内の全てのゴースト関連データを収集
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('ghost_records_')) {
+            try {
+                const data = JSON.parse(localStorage.getItem(key));
+                if (data) {
+                    allData[key] = data;
+                    count++;
+                }
+            } catch (e) {
+                console.error("[Export] Error parsing key:", key, e);
+            }
+        }
+    }
     
-    if (!saved) {
-        alert("エクスポートするゴーストデータが見つかりません。\n(Seed: " + seed + ", Height: " + height + "m)");
+    if (count === 0) {
+        alert("エクスポートするゴーストデータが1つも見つかりません。");
         return;
     }
 
-    const records = JSON.parse(saved);
-    if (!records || records.length === 0) return;
-
-    // ファイル名を作成
-    const fileName = `ghost_v3_s${seed}_h${height}_sz${areaSize}_d${Number(density).toFixed(2)}.json`;
+    // ファイル名を作成 (日付入り)
+    const dateStr = new Date().toISOString().split('T')[0];
+    const fileName = `all_ghost_records_${dateStr}.json`;
     
     // JSONをBlobとして作成
-    const blob = new Blob([saved], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     
     const a = document.createElement('a');
@@ -260,7 +367,7 @@ window.exportGhostData = function(seed, height, areaSize, density) {
         URL.revokeObjectURL(url);
     }, 0);
 
-    console.log(`[Export] Saved ghost data to ${fileName}`);
+    console.log(`[Export] Successfully exported ${count} ghost categories to ${fileName}`);
 };
 
 

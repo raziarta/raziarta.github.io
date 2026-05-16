@@ -152,6 +152,18 @@ function showRecordsUI() {
         grouped[r.height].push(r);
     });
 
+    // ゴーストデータからも高度を収集
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('ghost_records_v3_')) {
+            try {
+                const parts = key.split('_');
+                const h = parseInt(parts[4]); // v3_seed_height...
+                if (!isNaN(h) && !grouped[h]) grouped[h] = [];
+            } catch(e) {}
+        }
+    }
+
     window._recordHeights = Object.keys(grouped).map(Number).sort((a, b) => a - b); // 昇順 (50m, 100m...)
     if (window._recordHeights.length === 0) {
         window._recordHeights = [50]; // レコードがない場合のデフォルト
@@ -194,6 +206,35 @@ function renderRecordsContent() {
     if (!container) return;
 
     const records = getRecords();
+    
+    // ゴーストデータからも記録を抽出して合算する
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('ghost_records_v3_')) {
+            try {
+                const ghostData = JSON.parse(localStorage.getItem(key));
+                if (Array.isArray(ghostData)) {
+                    ghostData.forEach(r => {
+                        const isDuplicate = records.some(existing => 
+                            existing.time === r.time && 
+                            existing.seed === r.seed && 
+                            existing.height === r.goalHeight &&
+                            (existing.playerName || 'YOU') === (r.playerName || 'YOU')
+                        );
+                        if (!isDuplicate) {
+                            records.push({
+                                ...r,
+                                height: r.goalHeight,
+                                mode: 'TIME TRIAL',
+                                isGhost: true
+                            });
+                        }
+                    });
+                }
+            } catch (e) {}
+        }
+    }
+
     const grouped = {};
     records.forEach(r => {
         if (!grouped[r.height]) grouped[r.height] = [];
@@ -205,12 +246,15 @@ function renderRecordsContent() {
 
     // モード未設定時のガード
     const currentMode = window._selectedRecordMode || 'TIME TRIAL';
-    const currentView = window._selectedRecordView || 'ALL';
+    const currentView = window._selectedRecordView || 'SELF';
 
     // 現在のモードとビューでフィルタリング
     const filteredByMode = rawRecords.filter(r => {
         const rMode = r.mode || 'COMBAT';
         if (rMode !== currentMode) return false;
+        
+        // 高度フィルタリング
+        if (r.height !== currentHeight) return false;
 
         if (currentView === 'SELF') {
             const pName = r.playerName || 'YOU';

@@ -339,44 +339,43 @@ async function importJsonFile(url, playerName) {
 
 
 /**
- * 全てのゴーストデータを一括でJSONとしてエクスポート（ダウンロード）
+ * 全ての自分の(YOU)ゴーストデータをエクスポートする
  */
 window.exportGhostData = function() {
     const allData = {};
-    let count = 0;
+    let totalExported = 0;
 
-    // localStorage内の全てのゴースト関連データを収集
+    console.log("[Export] Starting personal ghost data export...");
+
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.startsWith('ghost_records_')) {
             try {
-                const data = JSON.parse(localStorage.getItem(key));
-                if (data) {
-                    allData[key] = data;
-                    count++;
+    
+                const records = JSON.parse(localStorage.getItem(key));
+                if (Array.isArray(records)) {
+                    // 自分(YOU)の記録だけをフィルタリング
+                    const myRecords = records.filter(r => !r.playerName || r.playerName === 'YOU');
+                    
+                    if (myRecords.length > 0) {
+                        allData[key] = myRecords;
+                        totalExported += myRecords.length;
+                    }
                 }
-            } catch (e) {
-                console.error("[Export] Error parsing key:", key, e);
-            }
+            } catch (e) {}
         }
     }
-    
-    if (count === 0) {
-        alert("エクスポートするゴーストデータが1つも見つかりません。");
+
+    if (totalExported === 0) {
+        alert("エクスポート対象の自分の記録が見つかりませんでした。");
         return;
     }
 
-    // ファイル名を作成 (日付入り)
-    const dateStr = new Date().toISOString().split('T')[0];
-    const fileName = `all_ghost_records_${dateStr}.json`;
-    
-    // JSONをBlobとして作成
     const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    
     const a = document.createElement('a');
     a.href = url;
-    a.download = fileName;
+    a.download = `my_ghost_records_${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     
@@ -384,8 +383,7 @@ window.exportGhostData = function() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     }, 0);
-
-    console.log(`[Export] Successfully exported ${count} ghost categories to ${fileName}`);
 };
+
 
 
